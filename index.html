@@ -1,0 +1,2747 @@
+
+<!DOCTYPE html>
+<html lang="ms" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Travel@Perak — PWA Pelancongan Negeri Perak</title>
+
+  <!-- PWA & Mobile Web Meta Tags -->
+  <meta name="theme-color" content="#05070f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="TravelPerak">
+  <meta name="application-name" content="TravelPerak">
+  <meta name="description" content="Aplikasi Panduan Pelancongan Negeri Perak Darul Ridzuan - Warisan, Alam Semulajadi, Hotel & Kafe Hipster">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            perak: {
+              white: '#FFFFFF',
+              yellow: '#F59E0B',
+              black: '#0F172A',
+              accent: '#EAB308',
+              dark: '#030712'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Font: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Leaflet Map (OpenStreetMap) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <style>
+    /* ==========================================================
+       1. BASE / THEME
+       ========================================================== */
+    :root{
+      --gold:      #FBBF24;
+      --gold-deep: #F59E0B;
+      --cyan:      #22D3EE;
+      --violet:    #A78BFA;
+      --rose:      #FB7185;
+      --emerald:   #34D399;
+      --ink:       #05070f;
+      --ink-2:     #0B1020;
+      --ease-spring: cubic-bezier(.34,1.56,.64,1);
+      --ease-smooth: cubic-bezier(.22,1,.36,1);
+    }
+
+    *{ -webkit-tap-highlight-color: transparent; }
+
+    html{ scroll-behavior:smooth; }
+
+    body{
+      font-family:'Inter',system-ui,sans-serif;
+      color:#E2E8F5;
+      background-color:var(--ink);
+      background-image:
+        radial-gradient(1100px 700px at 8% -12%, rgba(245,158,11,.18), transparent 62%),
+        radial-gradient(900px 620px at 96% 2%, rgba(34,211,238,.15), transparent 62%),
+        radial-gradient(1000px 760px at 50% 112%, rgba(167,139,250,.16), transparent 62%);
+      background-attachment: fixed;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar{ width:8px; height:8px; }
+    ::-webkit-scrollbar-track{ background:transparent; }
+    ::-webkit-scrollbar-thumb{
+      background:linear-gradient(180deg,#f59e0b,#a16207);
+      border-radius:99px;
+    }
+
+    input, select, textarea{ accent-color:#f59e0b; }
+
+    /* ==========================================================
+       2. AMBIENT BACKGROUND ORBS
+       ========================================================== */
+    .aurora{
+      position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden;
+    }
+    .orb{
+      position:absolute; border-radius:9999px; filter:blur(80px); opacity:.34;
+      will-change:transform;
+    }
+    .orb-a{ width:340px; height:340px; background:#f59e0b; top:-90px; left:-100px; animation:drift-a 24s ease-in-out infinite; }
+    .orb-b{ width:300px; height:300px; background:#22d3ee; top:24%; right:-120px; opacity:.24; animation:drift-b 28s ease-in-out infinite; }
+    .orb-c{ width:360px; height:360px; background:#a78bfa; bottom:-140px; left:20%; opacity:.22; animation:drift-c 32s ease-in-out infinite; }
+    .orb-d{ width:260px; height:260px; background:#fb7185; bottom:30%; right:10%; opacity:.16; animation:drift-a 26s ease-in-out infinite reverse; }
+
+    @keyframes drift-a{
+      0%,100%{ transform:translate(0,0) scale(1); }
+      50%    { transform:translate(70px,50px) scale(1.15); }
+    }
+    @keyframes drift-b{
+      0%,100%{ transform:translate(0,0) scale(1); }
+      50%    { transform:translate(-80px,60px) scale(1.2); }
+    }
+    @keyframes drift-c{
+      0%,100%{ transform:translate(0,0) scale(1); }
+      50%    { transform:translate(50px,-70px) scale(1.1); }
+    }
+
+    /* ==========================================================
+       3. GLASS SURFACES
+       ========================================================== */
+    .glass-nav{
+      background:rgba(8,12,24,.82);
+      backdrop-filter:blur(20px) saturate(150%);
+      -webkit-backdrop-filter:blur(20px) saturate(150%);
+      border-top:1px solid rgba(245,158,11,.22);
+    }
+    .glass-panel{
+      background:linear-gradient(160deg, rgba(24,32,56,.78) 0%, rgba(10,14,28,.86) 100%);
+      backdrop-filter:blur(16px);
+      -webkit-backdrop-filter:blur(16px);
+      border:1px solid rgba(255,255,255,.07);
+    }
+    .glass-card{
+      background:linear-gradient(160deg, rgba(26,34,58,.82) 0%, rgba(9,13,26,.94) 100%);
+      backdrop-filter:blur(10px);
+      -webkit-backdrop-filter:blur(10px);
+      border:1px solid rgba(255,255,255,.07);
+    }
+
+    /* ==========================================================
+       4. UTILITIES
+       ========================================================== */
+    .no-scrollbar::-webkit-scrollbar{ display:none; }
+    .no-scrollbar{ -ms-overflow-style:none; scrollbar-width:none; }
+
+    /* Safe area (mobile notch / home indicator) */
+    .safe-bottom{ padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); }
+    .safe-top{ padding-top: env(safe-area-inset-top, 0px); }
+    .safe-x{
+      padding-left: env(safe-area-inset-left, 0px);
+      padding-right: env(safe-area-inset-right, 0px);
+    }
+
+    .text-gradient-gold{
+      background:linear-gradient(100deg,#fde68a,#fbbf24,#f59e0b,#fde68a);
+      background-size:220% 100%;
+      -webkit-background-clip:text; background-clip:text;
+      color:transparent;
+      animation:gradient-pan 6s ease-in-out infinite;
+    }
+    @keyframes gradient-pan{
+      0%,100%{ background-position:0% 50%; }
+      50%    { background-position:100% 50%; }
+    }
+
+    /* ==========================================================
+       5. PAGE / VIEW TRANSITIONS
+       ========================================================== */
+    @keyframes view-in{
+      0%  { opacity:0; transform:translateY(18px) scale(.985); }
+      100%{ opacity:1; transform:translateY(0) scale(1); }
+    }
+    .page-enter{ animation:view-in .5s var(--ease-smooth) both; }
+
+    @keyframes reveal-up{
+      0%  { opacity:0; transform:translateY(26px) scale(.96); }
+      100%{ opacity:1; transform:translateY(0) scale(1); }
+    }
+    .reveal{ opacity:0; animation:reveal-up .6s var(--ease-smooth) forwards; }
+
+    @keyframes pop-in{
+      0%  { opacity:0; transform:scale(.9) translateY(24px); }
+      100%{ opacity:1; transform:scale(1) translateY(0); }
+    }
+    .pop-in{ animation:pop-in .45s var(--ease-spring) both; }
+
+    @keyframes modal-in{
+      0%  { opacity:0; transform:scale(.92) translateY(30px); }
+      100%{ opacity:1; transform:scale(1) translateY(0); }
+    }
+    .modal-in{ animation:modal-in .42s var(--ease-spring) both; }
+
+    @keyframes backdrop-in{
+      from{ opacity:0; backdrop-filter:blur(0); }
+      to  { opacity:1; backdrop-filter:blur(14px); }
+    }
+    .backdrop-in{ animation:backdrop-in .3s ease both; }
+
+    /* ==========================================================
+       6. HEADER
+       ========================================================== */
+    .header-glow-line{
+      height:2px; width:100%;
+      background:linear-gradient(90deg, transparent, #f59e0b, #22d3ee, #a78bfa, #f59e0b, transparent);
+      background-size:200% 100%;
+      animation:gradient-pan 5s linear infinite;
+      opacity:.8;
+    }
+
+    .conic-glow{
+      background:conic-gradient(from 0deg,#fbbf24,#22d3ee,#a78bfa,#fb7185,#fbbf24);
+      border-radius:16px;
+      filter:blur(1px);
+      animation:spin-slow 8s linear infinite;
+    }
+    @keyframes spin-slow{ to{ transform:rotate(360deg); } }
+    .animate-spin-slow{ animation:spin-slow 8s linear infinite; }
+
+    /* Hamburger toggle */
+    .menu-toggle{
+      transition:transform .25s var(--ease-spring), background .3s ease,
+                 border-color .3s ease, box-shadow .3s ease;
+    }
+    .menu-toggle:active{ transform:scale(.9); }
+    .menu-toggle:hover{
+      box-shadow:0 0 0 4px rgba(245,158,11,.10);
+    }
+
+    /* ==========================================================
+       7. HERO
+       ========================================================== */
+    .hero{
+      position:relative;
+      background:linear-gradient(135deg,#0a1020 0%, #121a30 42%, #2a1a08 100%);
+      border:1px solid rgba(245,158,11,.26);
+      overflow:hidden;
+      isolation:isolate;
+    }
+    .hero::before{
+      content:'';
+      position:absolute; inset:-45%;
+      background:conic-gradient(from 0deg,
+        rgba(245,158,11,.22), rgba(34,211,238,.16),
+        rgba(167,139,250,.18), rgba(251,113,133,.14), rgba(245,158,11,.22));
+      filter:blur(70px);
+      animation:spin-slow 26s linear infinite;
+      z-index:-1;
+    }
+    .hero::after{
+      content:'';
+      position:absolute; inset:0;
+      background-image:
+        linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+      background-size:38px 38px;
+      mask-image:radial-gradient(ellipse at 30% 40%, #000 15%, transparent 72%);
+      -webkit-mask-image:radial-gradient(ellipse at 30% 40%, #000 15%, transparent 72%);
+      pointer-events:none;
+      z-index:-1;
+    }
+
+    .sparkle{
+      position:absolute; width:6px; height:6px; border-radius:99px;
+      background:#fbbf24; box-shadow:0 0 12px 3px rgba(251,191,36,.8);
+      animation:float-y 5s ease-in-out infinite;
+    }
+    @keyframes float-y{
+      0%,100%{ transform:translateY(0); opacity:.5; }
+      50%    { transform:translateY(-18px); opacity:1; }
+    }
+
+    /* ==========================================================
+       8. SEARCH
+       ========================================================== */
+    .search-wrap{
+      transition:box-shadow .35s var(--ease-smooth), border-color .35s ease;
+    }
+    .search-wrap:focus-within{
+      border-color:rgba(251,191,36,.75) !important;
+      box-shadow:0 0 0 4px rgba(245,158,11,.14), 0 10px 40px -12px rgba(245,158,11,.85);
+    }
+
+    /* ==========================================================
+       9. CATEGORY PILLS
+       ========================================================== */
+    .cat-pill{
+      transition:transform .3s var(--ease-spring), background .3s ease,
+                 color .3s ease, border-color .3s ease, box-shadow .3s ease;
+    }
+    .cat-pill:active{ transform:scale(.94); }
+    .cat-pill.active{
+      background:linear-gradient(135deg,#fde68a,#fbbf24 45%,#f59e0b);
+      color:#0b1020;
+      border-color:rgba(253,230,138,.85);
+      box-shadow:0 10px 26px -10px rgba(245,158,11,.95), 0 0 0 1px rgba(251,191,36,.35) inset;
+      transform:translateY(-2px);
+    }
+
+    /* ==========================================================
+       10. CARDS
+       ========================================================== */
+    .place-card{
+      transition:transform .45s var(--ease-smooth), box-shadow .45s var(--ease-smooth), border-color .35s ease;
+      will-change:transform;
+    }
+    .place-card:hover{
+      transform:translateY(-7px);
+      border-color:rgba(251,191,36,.55);
+      box-shadow:0 22px 45px -22px rgba(245,158,11,.55), 0 8px 24px -14px rgba(0,0,0,.9);
+    }
+    .place-card:active{ transform:translateY(-2px) scale(.99); }
+
+    .place-card .thumb img{
+      transition:transform .8s var(--ease-smooth), filter .6s ease;
+    }
+    .place-card:hover .thumb img{
+      transform:scale(1.09);
+    }
+
+    /* Image fade-in */
+    .fade-img{ opacity:0; transition:opacity .7s ease; }
+    .fade-img.loaded{ opacity:1; }
+
+    /* ==========================================================
+       11. CATEGORY COLOR SYSTEM
+       ========================================================== */
+    .chip-hotel    { background:linear-gradient(135deg,#22d3ee,#3b82f6); color:#04121a; }
+    .chip-cafe     { background:linear-gradient(135deg,#fbbf24,#f97316); color:#1a0f02; }
+    .chip-nature   { background:linear-gradient(135deg,#34d399,#0d9488); color:#03130f; }
+    .chip-heritage { background:linear-gradient(135deg,#a78bfa,#d946ef); color:#13061a; }
+    .chip-best     { background:linear-gradient(135deg,#fb7185,#f59e0b); color:#1a0510; }
+
+    /* ==========================================================
+       12. BUTTONS
+       ========================================================== */
+    .btn-gold{
+      background:linear-gradient(135deg,#fde68a,#fbbf24 40%,#f59e0b);
+      color:#0b1020;
+      box-shadow:0 10px 26px -12px rgba(245,158,11,.95);
+      transition:transform .25s var(--ease-spring), box-shadow .3s ease, filter .3s ease;
+      position:relative;
+      overflow:hidden;
+    }
+    .btn-gold:hover{ filter:brightness(1.08); box-shadow:0 14px 34px -12px rgba(245,158,11,1); }
+    .btn-gold:active{ transform:scale(.95); }
+
+    .btn-ghost{
+      transition:transform .25s var(--ease-spring), background .3s ease, border-color .3s ease;
+    }
+    .btn-ghost:active{ transform:scale(.95); }
+
+    /* ==========================================================
+       13. SIDEBAR NAVIGATION
+       ========================================================== */
+    .sidebar{
+      background:linear-gradient(165deg, rgba(15,21,38,.985) 0%, rgba(6,9,18,.995) 100%);
+      backdrop-filter:blur(22px) saturate(160%);
+      -webkit-backdrop-filter:blur(22px) saturate(160%);
+      border-right:1px solid rgba(245,158,11,.18);
+      box-shadow:26px 0 70px -32px rgba(0,0,0,1);
+      transform:translateX(-104%);
+      transition:transform .46s var(--ease-smooth);
+      will-change:transform;
+      padding-top:env(safe-area-inset-top, 0px);
+      padding-bottom:env(safe-area-inset-bottom, 0px);
+      padding-left:env(safe-area-inset-left, 0px);
+      display:flex;
+      flex-direction:column;
+    }
+    .sidebar.open{ transform:translateX(0); }
+
+    .side-overlay{
+      opacity:0; pointer-events:none;
+      transition:opacity .38s ease;
+      background:rgba(3,7,18,.72);
+      backdrop-filter:blur(6px);
+      -webkit-backdrop-filter:blur(6px);
+    }
+    .side-overlay.show{ opacity:1; pointer-events:auto; }
+
+    @keyframes side-in{
+      from{ opacity:0; transform:translateX(-22px); }
+      to  { opacity:1; transform:translateX(0); }
+    }
+    .sidebar.open .side-item{ animation:side-in .45s var(--ease-smooth) both; }
+
+    .side-item{
+      display:flex; align-items:center; gap:.8rem;
+      width:100%;
+      padding:.55rem .65rem;
+      border-radius:16px;
+      color:#8E9BB3;
+      font-weight:700; font-size:12.5px;
+      letter-spacing:-.01em;
+      transition:color .3s ease, background .3s ease, box-shadow .3s ease, transform .25s var(--ease-spring);
+    }
+    .side-item.hidden{ display:none !important; }
+    .side-item:active{ transform:scale(.97); }
+
+    .side-item .side-ico{
+      width:38px; height:38px; flex-shrink:0;
+      border-radius:13px;
+      display:flex; align-items:center; justify-content:center;
+      background:rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.07);
+      transition:all .38s var(--ease-spring);
+      font-size:14px;
+      position:relative;
+    }
+    .side-item:hover{ color:#E2E8F5; background:rgba(255,255,255,.045); }
+
+    .side-item.active{
+      color:#FBBF24;
+      background:linear-gradient(100deg, rgba(245,158,11,.17), rgba(245,158,11,.02));
+      box-shadow:inset 0 0 0 1px rgba(245,158,11,.30);
+    }
+    .side-item.active .side-ico{
+      background:linear-gradient(135deg,#fde68a,#fbbf24 45%,#f59e0b);
+      color:#0b1020;
+      border-color:rgba(253,230,138,.7);
+      box-shadow:0 10px 22px -10px rgba(245,158,11,1);
+      transform:translateY(-1px) scale(1.04);
+    }
+
+    .side-item#nav-btn-admin.active{
+      color:#FB7185;
+      background:linear-gradient(100deg, rgba(244,63,94,.18), rgba(244,63,94,.02));
+      box-shadow:inset 0 0 0 1px rgba(244,63,94,.32);
+    }
+    .side-item#nav-btn-admin.active .side-ico{
+      background:linear-gradient(135deg,#fda4af,#f43f5e 50%,#be123c);
+      color:#fff;
+      border-color:rgba(253,164,175,.6);
+      box-shadow:0 10px 22px -10px rgba(244,63,94,1);
+    }
+
+    .side-section-label{
+      padding:0 .7rem;
+      font-size:9.5px;
+      font-weight:800;
+      letter-spacing:.16em;
+      text-transform:uppercase;
+      color:#4C5872;
+    }
+
+    /* ==========================================================
+       14. FLOATING ACTION BUTTON (FAB) — HOTEL & MAP
+       ========================================================== */
+    .fab-main{
+      position:relative;
+      width:58px; height:58px;
+      border-radius:50%;
+      background:linear-gradient(135deg,#fde68a,#fbbf24 45%,#f59e0b);
+      color:#0b1020;
+      display:flex; align-items:center; justify-content:center;
+      font-size:20px;
+      border:none;
+      cursor:pointer;
+      box-shadow:0 14px 34px -10px rgba(245,158,11,.95), 0 4px 14px -4px rgba(0,0,0,.7);
+      transition:transform .45s var(--ease-spring), box-shadow .3s ease, filter .3s ease;
+      animation:fab-pulse 3.2s ease-in-out infinite;
+      will-change:transform;
+    }
+    @keyframes fab-pulse{
+      0%,100%{ box-shadow:0 14px 34px -10px rgba(245,158,11,.95), 0 0 0 0 rgba(245,158,11,.45); }
+      55%    { box-shadow:0 14px 34px -10px rgba(245,158,11,.95), 0 0 0 14px rgba(245,158,11,0); }
+    }
+    .fab-main:hover{ filter:brightness(1.08); }
+    .fab-main:active{ transform:scale(.9); }
+    .fab-main.open{
+      animation:none;
+      box-shadow:0 14px 34px -10px rgba(245,158,11,1), 0 0 0 4px rgba(245,158,11,.16);
+    }
+
+    .fab-main .fab-plus-icon{
+      transition:transform .5s var(--ease-spring);
+      display:inline-block;
+      line-height:1;
+    }
+    .fab-main.open .fab-plus-icon{
+      transform:rotate(135deg);
+    }
+
+    .fab-sub{
+      display:flex; align-items:center; gap:.5rem;
+      padding:.38rem .38rem .38rem .95rem;
+      border-radius:9999px;
+      font-size:11.5px;
+      font-weight:800;
+      letter-spacing:-.01em;
+      border:none;
+      cursor:pointer;
+      box-shadow:0 12px 28px -12px rgba(0,0,0,.92), 0 2px 8px -4px rgba(0,0,0,.6);
+      opacity:0;
+      pointer-events:none;
+      transform:translateY(16px) scale(.65);
+      transform-origin:bottom right;
+      transition:transform .42s var(--ease-spring), opacity .28s ease, filter .2s ease;
+      white-space:nowrap;
+      will-change:transform, opacity;
+    }
+    .fab-sub:hover{ filter:brightness(1.06); }
+    .fab-sub:active{ transform:scale(.94) !important; }
+
+    #fabMenu.open .fab-sub{
+      opacity:1;
+      pointer-events:auto;
+      transform:translateY(0) scale(1);
+    }
+    #fabMenu.open .fab-sub[data-fab="hotel"]{ transition-delay:0ms; }
+    #fabMenu.open .fab-sub[data-fab="map"]{ transition-delay:70ms; }
+
+    .fab-sub .fab-ico{
+      width:30px; height:30px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      font-size:13px; color:#fff;
+      flex-shrink:0;
+      order:2;
+    }
+    .fab-sub .fab-label{ order:1; }
+
+    /* Hotel variant */
+    .fab-hotel{ background:linear-gradient(135deg,#f0f9ff,#bae6fd); color:#0c4a6e; }
+    .fab-hotel .fab-ico{ background:linear-gradient(135deg,#22d3ee,#3b82f6); }
+
+    /* Map variant */
+    .fab-map{ background:linear-gradient(135deg,#ecfdf5,#a7f3d0); color:#064e3b; }
+    .fab-map .fab-ico{ background:linear-gradient(135deg,#34d399,#0d9488); }
+
+    /* ==========================================================
+       15. HEART / FAVORITE
+       ========================================================== */
+    @keyframes heart-pop{
+      0%  { transform:scale(1); }
+      35% { transform:scale(1.45) rotate(-8deg); }
+      70% { transform:scale(.92) rotate(4deg); }
+      100%{ transform:scale(1) rotate(0); }
+    }
+    .heart-pop{ animation:heart-pop .5s var(--ease-spring); }
+
+    /* ==========================================================
+       16. TOAST
+       ========================================================== */
+    @keyframes toast-in{
+      0%  { opacity:0; transform:translateX(120%) scale(.9); }
+      100%{ opacity:1; transform:translateX(0) scale(1); }
+    }
+    .toast-in{ animation:toast-in .5s var(--ease-spring) both; }
+
+    @keyframes toast-bar{
+      from{ transform:scaleX(1); }
+      to  { transform:scaleX(0); }
+    }
+    .toast-bar{ transform-origin:left; animation:toast-bar 4s linear forwards; }
+
+    /* ==========================================================
+       17. LEAFLET DARK THEME
+       ========================================================== */
+    .leaflet-popup-content-wrapper{
+      background:linear-gradient(160deg,#111a2e,#0a1020) !important;
+      color:#f8fafc !important;
+      border:1px solid rgba(245,158,11,.6) !important;
+      border-radius:18px !important;
+      box-shadow:0 18px 40px -14px rgba(0,0,0,.9) !important;
+    }
+    .leaflet-popup-tip{ background:#0a1020 !important; }
+    .leaflet-container{ background-color:#05070f !important; font-family:'Inter',sans-serif !important; }
+    .leaflet-control-zoom a{
+      background:#111a2e !important; color:#fbbf24 !important;
+      border-color:rgba(245,158,11,.35) !important;
+    }
+    .leaflet-control-zoom a:hover{ background:#1b2740 !important; }
+
+    .map-pin{
+      width:34px; height:34px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      background:#05070f;
+      border:2px solid #f59e0b;
+      box-shadow:0 0 0 0 rgba(245,158,11,.7), 0 6px 16px -4px rgba(0,0,0,.9);
+      animation:pin-pulse 2.4s ease-out infinite;
+    }
+    @keyframes pin-pulse{
+      0%  { box-shadow:0 0 0 0 rgba(245,158,11,.65), 0 6px 16px -4px rgba(0,0,0,.9); }
+      70% { box-shadow:0 0 0 14px rgba(245,158,11,0), 0 6px 16px -4px rgba(0,0,0,.9); }
+      100%{ box-shadow:0 0 0 0 rgba(245,158,11,0), 0 6px 16px -4px rgba(0,0,0,.9); }
+    }
+
+    /* ==========================================================
+       18. MISC
+       ========================================================== */
+    .stat-card{ transition:transform .4s var(--ease-smooth), box-shadow .4s ease; }
+    .stat-card:hover{ transform:translateY(-4px); }
+
+    .admin-row{ transition:background .3s ease, transform .3s ease; }
+    .admin-row:hover{ background:rgba(245,158,11,.05); }
+
+    @keyframes shine{
+      0%  { transform:translateX(-120%); }
+      100%{ transform:translateX(220%); }
+    }
+    .shine::after{
+      content:''; position:absolute; top:0; bottom:0; width:45%;
+      background:linear-gradient(100deg, transparent, rgba(255,255,255,.35), transparent);
+      transform:translateX(-120%);
+    }
+    .shine:hover::after{ animation:shine .9s ease; }
+
+    @media (prefers-reduced-motion: reduce){
+      *, *::before, *::after{
+        animation-duration:.01ms !important;
+        animation-iteration-count:1 !important;
+        transition-duration:.01ms !important;
+      }
+    }
+  </style>
+
+  <script>
+    /* Inline PWA Web Manifest */
+    const manifestObj = {
+      name: "Travel@Perak",
+      short_name: "TravelPerak",
+      description: "Panduan Rasmi Pelancongan Negeri Perak Darul Ridzuan",
+      start_url: "./",
+      display: "standalone",
+      background_color: "#05070f",
+      theme_color: "#F59E0B",
+      icons: [
+        { src: "https://placehold.co/192x192/F59E0B/0F172A?text=PERAK", sizes: "192x192", type: "image/png" },
+        { src: "https://placehold.co/512x512/F59E0B/0F172A?text=TRAVEL+PERAK", sizes: "512x512", type: "image/png" }
+      ]
+    };
+    const stringManifest = JSON.stringify(manifestObj);
+    const blobManifest = new Blob([stringManifest], { type: 'application/json' });
+    const manifestURL = URL.createObjectURL(blobManifest);
+    const link = document.createElement('link');
+    link.rel = 'manifest';
+    link.href = manifestURL;
+    document.head.appendChild(link);
+  </script>
+</head>
+
+<body class="h-full flex flex-col select-none overflow-x-hidden antialiased">
+
+  <!-- Ambient animated background -->
+  <div class="aurora" aria-hidden="true">
+    <div class="orb orb-a"></div>
+    <div class="orb orb-b"></div>
+    <div class="orb orb-c"></div>
+    <div class="orb orb-d"></div>
+  </div>
+
+  <!-- ============================ SIDEBAR OVERLAY ============================ -->
+  <div id="sidebarOverlay" onclick="closeSidebar()" class="side-overlay fixed inset-0 z-[45]" aria-hidden="true"></div>
+
+  <!-- ============================ SIDEBAR NAVIGATION ============================ -->
+  <aside id="appSidebar" class="sidebar fixed top-0 left-0 bottom-0 z-[46] w-[288px] max-w-[84vw]"
+         role="navigation" aria-label="Menu navigasi utama">
+
+    <div class="px-4 pt-4 pb-3.5 flex items-center justify-between border-b border-white/8 flex-shrink-0">
+      <div class="flex items-center space-x-2.5 cursor-pointer group" onclick="navigateTo('home')">
+        <div class="relative w-10 h-10 flex-shrink-0">
+          <div class="absolute inset-0 conic-glow opacity-90"></div>
+          <div class="absolute inset-[2.5px] rounded-[13px] bg-slate-950 flex items-center justify-center">
+            <i class="fa-solid fa-compass text-amber-400 text-base"></i>
+          </div>
+        </div>
+        <div class="leading-tight">
+          <span class="font-black tracking-tight text-white text-sm block">Travel<span class="text-gradient-gold">@Perak</span></span>
+          <span class="text-[10px] text-slate-500 font-medium">Darul Ridzuan Discovery</span>
+        </div>
+      </div>
+
+      <button onclick="closeSidebar()" aria-label="Tutup menu"
+        class="w-9 h-9 rounded-xl bg-white/5 border border-white/10 text-slate-300 flex items-center justify-center hover:bg-rose-500/15 hover:text-rose-300 hover:border-rose-500/35 transition active:scale-90 flex-shrink-0">
+        <i class="fa-solid fa-xmark text-xs"></i>
+      </button>
+    </div>
+
+    <div class="px-4 pt-3.5 flex-shrink-0">
+      <div class="flex items-center gap-3 p-3 rounded-2xl bg-white/5 border border-white/8">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-300 to-amber-600 text-slate-950 flex items-center justify-center flex-shrink-0 shadow-[0_8px_20px_-8px_rgba(245,158,11,.9)]">
+          <i class="fa-solid fa-user-astronaut text-sm"></i>
+        </div>
+        <div class="min-w-0 flex-1">
+          <p id="sidebarUserName" class="text-xs font-bold text-white truncate">Pelawat (Guest)</p>
+          <p id="sidebarUserRole" class="text-[10px] text-amber-400/90 truncate">Belum log masuk</p>
+        </div>
+      </div>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto no-scrollbar px-3 py-4 space-y-1.5">
+      <p class="side-section-label pb-1.5">Menu Utama</p>
+
+      <button onclick="navigateTo('home')" id="nav-btn-home" class="side-item active" style="animation-delay:.04s">
+        <span class="side-ico"><i class="fa-solid fa-house"></i></span>
+        <span class="flex-1 text-left">Laman Utama</span>
+        <i class="fa-solid fa-chevron-right text-[9px] opacity-40"></i>
+      </button>
+
+      <button onclick="navigateTo('map')" id="nav-btn-map" class="side-item" style="animation-delay:.08s">
+        <span class="side-ico"><i class="fa-solid fa-map-location-dot"></i></span>
+        <span class="flex-1 text-left">Peta Interaktif</span>
+        <i class="fa-solid fa-chevron-right text-[9px] opacity-40"></i>
+      </button>
+
+      <button onclick="navigateTo('best')" id="nav-btn-best" class="side-item" style="animation-delay:.12s">
+        <span class="side-ico"><i class="fa-solid fa-crown"></i></span>
+        <span class="flex-1 text-left">Best in Perak</span>
+        <i class="fa-solid fa-chevron-right text-[9px] opacity-40"></i>
+      </button>
+
+      <button onclick="navigateTo('favorites')" id="nav-btn-favorites" class="side-item" style="animation-delay:.16s">
+        <span class="side-ico">
+          <i class="fa-solid fa-heart"></i>
+          <span id="navFavBadge" class="hidden absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-slate-950 shadow-[0_0_10px_2px_rgba(244,63,94,.9)]"></span>
+        </span>
+        <span class="flex-1 text-left">Disimpan</span>
+        <i class="fa-solid fa-chevron-right text-[9px] opacity-40"></i>
+      </button>
+
+      <p class="side-section-label pt-4 pb-1.5">Akaun &amp; Pentadbir</p>
+
+      <button onclick="navigateTo('admin')" id="nav-btn-admin" class="side-item hidden" style="animation-delay:.20s">
+        <span class="side-ico"><i class="fa-solid fa-screwdriver-wrench"></i></span>
+        <span class="flex-1 text-left">Panel Admin</span>
+        <i class="fa-solid fa-chevron-right text-[9px] opacity-40"></i>
+      </button>
+
+      <button onclick="navigateTo('profile')" id="nav-btn-profile" class="side-item" style="animation-delay:.24s">
+        <span class="side-ico"><i class="fa-solid fa-user-gear"></i></span>
+        <span class="flex-1 text-left">Profil Saya</span>
+        <i class="fa-solid fa-chevron-right text-[9px] opacity-40"></i>
+      </button>
+    </nav>
+
+    <div class="px-4 pt-3 pb-4 border-t border-white/8 flex-shrink-0 space-y-2.5">
+      <button id="sidebarAuthBtn" onclick="openAuthModal()"
+        class="w-full py-3 rounded-2xl text-[11px] font-bold bg-white/5 border border-white/10 text-slate-200 hover:bg-white/10 hover:border-amber-500/40 transition active:scale-95">
+        <i class="fa-solid fa-right-to-bracket mr-1.5 text-amber-400"></i> Log Masuk / Daftar
+      </button>
+      <p class="text-[9.5px] text-slate-600 text-center tracking-wide">
+        Travel@Perak v2.0 • PWA • OpenStreetMap
+      </p>
+    </div>
+  </aside>
+
+  <!-- ============================ HEADER ============================ -->
+  <header class="sticky top-0 z-40 w-full glass-nav safe-top">
+    <div class="h-1.5 w-full flex">
+      <div class="w-1/3 bg-white/90"></div>
+      <div class="w-1/3 bg-gradient-to-r from-amber-400 to-amber-500"></div>
+      <div class="w-1/3 bg-slate-900"></div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-3 sm:px-4 py-3 flex items-center justify-between gap-2 safe-x">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <button onclick="openSidebar()" id="sidebarToggleBtn" aria-label="Buka menu navigasi"
+          class="menu-toggle relative w-10 h-10 rounded-2xl bg-white/5 border border-white/10 text-amber-300 flex items-center justify-center hover:bg-amber-500/15 hover:border-amber-500/40 flex-shrink-0">
+          <i class="fa-solid fa-bars-staggered text-sm"></i>
+        </button>
+
+        <div class="flex items-center space-x-2.5 cursor-pointer group min-w-0" onclick="navigateTo('home')">
+          <div class="relative w-10 h-10 sm:w-11 sm:h-11 flex-shrink-0">
+            <div class="absolute inset-0 conic-glow opacity-90 group-hover:opacity-100 transition"></div>
+            <div class="absolute inset-[2.5px] rounded-[13px] bg-slate-950 flex items-center justify-center">
+              <i class="fa-solid fa-compass text-amber-400 text-base transition-transform duration-500 group-hover:rotate-[190deg]"></i>
+            </div>
+          </div>
+          <div class="min-w-0 hidden xs:block sm:block">
+            <div class="flex items-center space-x-1.5">
+              <span class="font-black tracking-tight text-white text-sm sm:text-base whitespace-nowrap">Travel<span class="text-gradient-gold">@Perak</span></span>
+              <span class="hidden sm:inline px-1.5 py-0.5 text-[9px] font-bold rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30">PWA</span>
+            </div>
+            <p class="hidden sm:block text-[11px] text-slate-400">Darul Ridzuan Discovery</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-2 flex-shrink-0">
+        <div id="roleBadgeContainer" class="hidden sm:flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-white/5 border border-white/10 backdrop-blur-md">
+          <span class="w-2 h-2 rounded-full mr-2 bg-emerald-400 animate-pulse shadow-[0_0_8px_2px_rgba(52,211,153,.7)]"></span>
+          <span id="roleBadgeText" class="text-slate-200">Guest</span>
+        </div>
+
+        <button onclick="openAuthModal()" id="headerAuthBtn" class="btn-gold flex items-center space-x-1.5 px-3 sm:px-3.5 py-2 rounded-xl font-bold text-xs">
+          <i class="fa-solid fa-user-circle"></i>
+          <span id="headerAuthText" class="hidden sm:inline">Masuk</span>
+        </button>
+
+        <button id="adminShortcutBtn" onclick="navigateTo('admin')" class="hidden px-3 py-2 rounded-xl bg-rose-500/15 text-rose-300 border border-rose-500/40 text-xs font-bold hover:bg-rose-500/25 transition">
+          <i class="fa-solid fa-shield-halved sm:mr-1"></i><span class="hidden sm:inline">Admin</span>
+        </button>
+      </div>
+    </div>
+    <div class="header-glow-line"></div>
+  </header>
+
+  <!-- ============================ MAIN ============================ -->
+  <main id="appContainer" class="relative z-10 flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 pt-4 pb-6 safe-bottom safe-x">
+
+    <!-- ============ PAGE 1: HOME ============ -->
+    <section id="view-home" class="page-enter space-y-7">
+
+      <div class="hero rounded-[28px] p-5 sm:p-8 shadow-2xl">
+        <span class="sparkle" style="top:18%; right:14%; animation-delay:.2s"></span>
+        <span class="sparkle" style="top:64%; right:26%; animation-delay:1.4s; width:4px; height:4px;"></span>
+        <span class="sparkle" style="top:36%; right:8%; animation-delay:2.6s; width:5px; height:5px;"></span>
+
+        <div class="relative z-10 max-w-2xl space-y-4">
+          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/8 backdrop-blur-md border border-white/15 text-white text-xs font-medium">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
+            </span>
+            Tahun Melawat Perak 2026
+          </div>
+
+          <h1 class="text-[26px] sm:text-4xl font-black text-white tracking-tight leading-[1.18]">
+            Jelajahi Warisan, Flora &amp; Selera
+            <span class="text-gradient-gold block sm:inline">Bumi Bersejarah</span>
+          </h1>
+
+          <p class="text-slate-300/90 text-xs sm:text-sm leading-relaxed max-w-lg">
+            Dari istana misteri Kellie's Castle hingga keharuman White Coffee Ipoh dan ketenangan Pulau Pangkor.
+          </p>
+
+          <div class="pt-1">
+            <div class="search-wrap relative flex items-center rounded-2xl bg-slate-950/70 border border-amber-500/25 backdrop-blur-md overflow-hidden">
+              <i class="fa-solid fa-magnifying-glass absolute left-4 text-slate-400 text-sm"></i>
+              <input type="text" id="globalSearchInput" oninput="handleSearch(this.value)"
+                placeholder="Cari destinasi, hotel, kopi atau daerah..."
+                class="w-full pl-11 pr-24 py-3.5 bg-transparent text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none">
+              <button onclick="clearSearch()" class="btn-gold absolute right-2 px-3.5 py-2 rounded-xl font-bold text-xs">
+                Cari
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-2 overflow-x-auto no-scrollbar py-1 -mx-1 px-1">
+        <button onclick="setCategoryFilter('all')" class="cat-pill active px-4 py-2.5 rounded-2xl text-xs font-semibold whitespace-nowrap bg-white/5 text-slate-300 border border-white/10 backdrop-blur-md" data-category="all">
+          <i class="fa-solid fa-layer-group mr-1.5"></i> Semua
+        </button>
+        <button onclick="setCategoryFilter('best')" class="cat-pill px-4 py-2.5 rounded-2xl text-xs font-semibold whitespace-nowrap bg-white/5 text-slate-300 border border-white/10 backdrop-blur-md" data-category="best">
+          <i class="fa-solid fa-crown text-rose-400 mr-1.5"></i> Best in Perak
+        </button>
+        <button onclick="setCategoryFilter('hotel')" class="cat-pill px-4 py-2.5 rounded-2xl text-xs font-semibold whitespace-nowrap bg-white/5 text-slate-300 border border-white/10 backdrop-blur-md" data-category="hotel">
+          <i class="fa-solid fa-hotel text-cyan-400 mr-1.5"></i> Hotel &amp; Resort
+        </button>
+        <button onclick="setCategoryFilter('cafe')" class="cat-pill px-4 py-2.5 rounded-2xl text-xs font-semibold whitespace-nowrap bg-white/5 text-slate-300 border border-white/10 backdrop-blur-md" data-category="cafe">
+          <i class="fa-solid fa-mug-hot text-amber-400 mr-1.5"></i> Coffee Shop
+        </button>
+        <button onclick="setCategoryFilter('nature')" class="cat-pill px-4 py-2.5 rounded-2xl text-xs font-semibold whitespace-nowrap bg-white/5 text-slate-300 border border-white/10 backdrop-blur-md" data-category="nature">
+          <i class="fa-solid fa-tree text-emerald-400 mr-1.5"></i> Alam Semulajadi
+        </button>
+        <button onclick="setCategoryFilter('heritage')" class="cat-pill px-4 py-2.5 rounded-2xl text-xs font-semibold whitespace-nowrap bg-white/5 text-slate-300 border border-white/10 backdrop-blur-md" data-category="heritage">
+          <i class="fa-solid fa-landmark text-violet-400 mr-1.5"></i> Warisan Sejarah
+        </button>
+      </div>
+
+      <div>
+        <div class="flex items-center justify-between mb-3.5">
+          <h2 class="text-base sm:text-lg font-bold text-white flex items-center">
+            <span class="w-1.5 h-5 rounded-full bg-gradient-to-b from-amber-300 to-amber-600 mr-2.5 shadow-[0_0_12px_rgba(245,158,11,.7)]"></span>
+            Pilihan Utama Pelancong
+          </h2>
+          <span class="text-xs text-amber-400 font-semibold cursor-pointer hover:text-amber-300 transition flex items-center gap-1 group" onclick="setCategoryFilter('best')">
+            Lihat Semua <i class="fa-solid fa-arrow-right text-[10px] transition-transform group-hover:translate-x-1"></i>
+          </span>
+        </div>
+        <div id="featuredReel" class="flex space-x-4 overflow-x-auto no-scrollbar pb-3 -mx-1 px-1"></div>
+      </div>
+
+      <div>
+        <div class="flex items-center justify-between mb-3.5">
+          <h2 id="gridTitle" class="text-base sm:text-lg font-bold text-white flex items-center">
+            <span class="w-1.5 h-5 rounded-full bg-gradient-to-b from-cyan-300 to-blue-600 mr-2.5 shadow-[0_0_12px_rgba(34,211,238,.6)]"></span>
+            Semua Destinasi &amp; Tarikan
+          </h2>
+          <span id="placesCountText" class="text-[11px] text-slate-400 font-medium"></span>
+        </div>
+        <div id="placesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      </div>
+    </section>
+
+    <!-- ============ PAGE 2: MAP ============ -->
+    <section id="view-map" class="page-enter hidden space-y-4">
+      <div class="glass-panel p-4 rounded-3xl flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center">
+            <span class="w-1.5 h-5 rounded-full bg-gradient-to-b from-cyan-300 to-blue-600 mr-2.5"></span>
+            Peta Interaktif Perak
+          </h2>
+          <p class="text-[11px] text-slate-400 mt-1 ml-4">Tekan mana-mana penanda untuk melihat butiran lokasi.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="resetMapView()" class="btn-ghost px-3.5 py-2 rounded-xl bg-white/5 text-xs text-slate-200 border border-white/10 hover:border-amber-400/60 hover:text-amber-300 flex items-center">
+            <i class="fa-solid fa-arrows-rotate mr-1.5"></i> Reset
+          </button>
+          <button onclick="openMapApiModal()" class="btn-ghost px-3.5 py-2 rounded-xl bg-amber-500/15 text-xs text-amber-300 border border-amber-500/35 hover:bg-amber-500/25 flex items-center">
+            <i class="fa-solid fa-layer-group mr-1.5"></i> Pilihan Peta
+          </button>
+        </div>
+      </div>
+
+      <div class="w-full h-[68vh] rounded-[28px] overflow-hidden border border-amber-500/25 relative shadow-2xl">
+        <div id="perakMap" class="w-full h-full z-0"></div>
+      </div>
+
+      <p class="text-[10px] text-slate-500 text-center leading-relaxed">
+        Peta oleh <span class="text-amber-400/90 font-semibold">OpenStreetMap</span> contributors •
+        Navigasi dibuka melalui aplikasi Google Maps peranti anda.
+      </p>
+    </section>
+
+    <!-- ============ PAGE 3: BEST IN PERAK ============ -->
+    <section id="view-best" class="page-enter hidden space-y-6">
+      <div class="relative p-6 rounded-[28px] overflow-hidden border border-rose-500/30"
+           style="background:linear-gradient(120deg, rgba(251,113,133,.22), rgba(245,158,11,.14) 45%, rgba(10,14,28,.95));">
+        <div class="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-rose-500/20 blur-3xl pointer-events-none"></div>
+        <div class="relative flex items-center space-x-3 mb-2">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-rose-400 to-amber-500 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-rose-500/30">
+            <i class="fa-solid fa-award"></i>
+          </div>
+          <h2 class="text-xl font-black text-white">Best in Perak</h2>
+        </div>
+        <p class="relative text-xs text-slate-300 max-w-xl leading-relaxed">
+          Koleksi ikonik yang wajib dikunjungi sekurang-kurangnya sekali seumur hidup apabila menjejakkan kaki ke Perak Darul Ridzuan.
+        </p>
+      </div>
+
+      <div id="bestListContainer" class="space-y-4"></div>
+    </section>
+
+    <!-- ============ PAGE 4: FAVORITES ============ -->
+    <section id="view-favorites" class="page-enter hidden space-y-4">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-lg font-bold text-white flex items-center">
+          <span class="w-1.5 h-5 rounded-full bg-gradient-to-b from-rose-300 to-pink-600 mr-2.5 shadow-[0_0_12px_rgba(251,113,133,.7)]"></span>
+          Lokasi Kegemaran Anda
+        </h2>
+        <span id="favCountBadge" class="px-3 py-1 rounded-full bg-rose-500/15 text-rose-300 text-[11px] font-semibold border border-rose-500/30">0 Disimpan</span>
+      </div>
+      <div id="favoritesListContainer"></div>
+    </section>
+
+    <!-- ============ PAGE 5: ADMIN ============ -->
+    <section id="view-admin" class="page-enter hidden space-y-6">
+      <div class="glass-panel p-5 rounded-[28px] border border-rose-500/25 relative overflow-hidden">
+        <div class="absolute -left-20 -bottom-20 w-64 h-64 rounded-full bg-rose-600/15 blur-3xl pointer-events-none"></div>
+        <div class="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/15 text-rose-300 text-[11px] font-semibold mb-2 border border-rose-500/35">
+              <i class="fa-solid fa-shield-halved"></i> Portal Pentadbir
+            </div>
+            <h2 class="text-xl sm:text-2xl font-black text-white">Dashboard Pengurusan Kandungan</h2>
+            <p class="text-xs text-slate-400 mt-1">Urus senarai destinasi, koordinat GPS peta, hotel dan kafe negeri Perak.</p>
+          </div>
+          <button onclick="openAddPlaceModal()" class="btn-gold shine relative overflow-hidden inline-flex items-center justify-center space-x-2 px-5 py-3 rounded-2xl font-bold text-xs">
+            <i class="fa-solid fa-plus"></i>
+            <span>Tambah Lokasi Baru</span>
+          </button>
+        </div>
+
+        <div class="relative grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
+          <div class="stat-card p-3.5 rounded-2xl bg-gradient-to-br from-amber-500/20 to-transparent border border-amber-500/25">
+            <p class="text-[11px] text-slate-400">Jumlah Tempat</p>
+            <p id="statTotalPlaces" class="text-2xl font-black text-amber-300 mt-1">0</p>
+          </div>
+          <div class="stat-card p-3.5 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-transparent border border-cyan-500/25">
+            <p class="text-[11px] text-slate-400">Hotel &amp; Penginapan</p>
+            <p id="statHotels" class="text-2xl font-black text-cyan-300 mt-1">0</p>
+          </div>
+          <div class="stat-card p-3.5 rounded-2xl bg-gradient-to-br from-orange-500/20 to-transparent border border-orange-500/25">
+            <p class="text-[11px] text-slate-400">Kedai Kopi / Kafe</p>
+            <p id="statCafes" class="text-2xl font-black text-orange-300 mt-1">0</p>
+          </div>
+          <div class="stat-card p-3.5 rounded-2xl bg-gradient-to-br from-rose-500/20 to-transparent border border-rose-500/25">
+            <p class="text-[11px] text-slate-400">Tersimpan</p>
+            <p id="statBookmarks" class="text-2xl font-black text-rose-300 mt-1">0</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-panel p-4 rounded-[28px]">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <h3 class="text-sm font-bold text-white flex items-center">
+            <i class="fa-solid fa-list-check text-amber-400 mr-2"></i> Senarai Semua Item Rekod
+          </h3>
+          <input type="text" id="adminSearchInput" oninput="filterAdminTable(this.value)" placeholder="Tapis senarai item..."
+            class="px-3.5 py-2 rounded-xl bg-slate-950/70 border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400/70 focus:ring-2 focus:ring-amber-400/15 transition">
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-white/5 text-slate-400 uppercase text-[10px] tracking-wider border-b border-white/8">
+              <tr>
+                <th class="py-3 px-3 rounded-l-xl">Item / Gambar</th>
+                <th class="py-3 px-3">Kategori</th>
+                <th class="py-3 px-3">Daerah</th>
+                <th class="py-3 px-3">Rating &amp; Harga</th>
+                <th class="py-3 px-3 text-right rounded-r-xl">Tindakan</th>
+              </tr>
+            </thead>
+            <tbody id="adminTableBody" class="divide-y divide-white/5"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PAGE 6: PROFILE ============ -->
+    <section id="view-profile" class="page-enter hidden space-y-6 max-w-xl mx-auto">
+      <div class="glass-panel p-6 rounded-[28px] text-center relative overflow-hidden">
+        <div class="absolute -top-24 left-1/2 -translate-x-1/2 w-64 h-64 rounded-full bg-amber-500/12 blur-3xl pointer-events-none"></div>
+
+        <div class="relative w-24 h-24 rounded-full mx-auto p-[3px] mb-4 bg-gradient-to-tr from-amber-400 via-white/70 to-slate-900 shadow-[0_0_35px_-6px_rgba(245,158,11,.85)]">
+          <div class="w-full h-full bg-slate-950 rounded-full flex items-center justify-center text-4xl text-amber-400">
+            <i class="fa-solid fa-user-astronaut"></i>
+          </div>
+        </div>
+
+        <h2 id="profileUserName" class="text-lg font-bold text-white">Pelawat Umum (Guest)</h2>
+        <p id="profileUserEmail" class="text-xs text-slate-400 mb-3 mt-0.5">Sila log masuk untuk menyimpan kegemaran</p>
+        <span id="profileRoleBadge" class="inline-block px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white/5 text-amber-400 border border-amber-500/30">
+          Peranan: Pelawat
+        </span>
+
+        <div class="mt-6 pt-6 border-t border-white/8 grid grid-cols-2 gap-3 text-left">
+          <div class="p-3.5 rounded-2xl bg-white/5 border border-white/8">
+            <p class="text-[11px] text-slate-400">Status PWA</p>
+            <p class="text-xs font-semibold text-emerald-400 flex items-center mt-1">
+              <i class="fa-solid fa-circle-check mr-1.5 text-[10px]"></i> Siap Dipasang
+            </p>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-white/5 border border-white/8">
+            <p class="text-[11px] text-slate-400">Kegemaran Saya</p>
+            <p id="profileBookmarkCount" class="text-xs font-semibold text-white mt-1">0 Tempat</p>
+          </div>
+        </div>
+
+        <div class="mt-6 space-y-2">
+          <button id="profileActionBtn" onclick="openAuthModal()" class="btn-gold w-full py-3 rounded-2xl font-bold text-xs">
+            Log Masuk / Daftar Akaun
+          </button>
+          <button id="logoutBtn" onclick="handleLogout()" class="hidden w-full py-3 rounded-2xl bg-rose-500/15 text-rose-300 border border-rose-500/35 hover:bg-rose-500/25 font-bold text-xs transition">
+            <i class="fa-solid fa-right-from-bracket mr-1.5"></i> Log Keluar
+          </button>
+        </div>
+      </div>
+
+      <div class="p-4 rounded-3xl glass-panel border border-amber-500/20 text-xs space-y-2">
+        <div class="font-bold text-amber-400 flex items-center">
+          <i class="fa-solid fa-circle-info mr-1.5"></i> Akaun Ujian Pra-Pasang (Demo)
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-300">
+          <div class="p-3 rounded-2xl bg-slate-950/60 border border-white/8">
+            <span class="text-amber-300 font-semibold">Admin (Akses Penuh):</span><br>
+            Emel: <code class="text-white">admin@perak.my</code><br>
+            Katalaluan: <code class="text-white">admin123</code>
+          </div>
+          <div class="p-3 rounded-2xl bg-slate-950/60 border border-white/8">
+            <span class="text-cyan-300 font-semibold">Pelanggan (Customer):</span><br>
+            Emel: <code class="text-white">ahmad@gmail.com</code><br>
+            Katalaluan: <code class="text-white">user123</code>
+          </div>
+        </div>
+        <p class="text-[10px] text-slate-400 italic leading-relaxed">
+          *Nota Keselamatan: Dalam persekitaran produksi sebenar, autentikasi dan hak capaian admin wajib disahkan menerusi pelayan backend yang selamat.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============================ FLOATING ACTION BUTTON — HOTEL & MAP ============================ -->
+  <div id="fabContainer"
+       class="fixed z-[44]"
+       style="right: max(18px, env(safe-area-inset-right)); bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);">
+
+    <!-- Speed-dial sub buttons -->
+    <div id="fabMenu" class="flex flex-col items-end gap-2.5 mb-3">
+      <button onclick="fabAction('hotel')" data-fab="hotel" aria-label="Hotel & Resort"
+        class="fab-sub fab-hotel">
+        <span class="fab-label">Hotel</span>
+        <span class="fab-ico"><i class="fa-solid fa-hotel"></i></span>
+      </button>
+
+      <button onclick="fabAction('map')" data-fab="map" aria-label="Peta Interaktif"
+        class="fab-sub fab-map">
+        <span class="fab-label">Peta</span>
+        <span class="fab-ico"><i class="fa-solid fa-map-location-dot"></i></span>
+      </button>
+    </div>
+
+    <!-- Main FAB -->
+    <button id="fabMain" onclick="toggleFab(event)" aria-label="Menu akses pantas" aria-expanded="false"
+      class="fab-main">
+      <i class="fa-solid fa-plus fab-plus-icon"></i>
+    </button>
+  </div>
+
+  <!-- ============================ DETAIL MODAL ============================ -->
+  <div id="placeDetailModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="glass-panel w-full sm:max-w-xl max-h-[92vh] rounded-t-[28px] sm:rounded-[28px] overflow-hidden flex flex-col modal-in shadow-2xl border border-amber-500/25">
+
+      <div class="relative h-64 w-full overflow-hidden bg-slate-950 flex-shrink-0">
+        <img id="detailImg" src="" alt="Destinasi Perak" class="w-full h-full object-cover">
+        <div class="absolute inset-0 bg-gradient-to-t from-[#0a0f1e] via-transparent to-black/50"></div>
+
+        <button onclick="closePlaceDetailModal()" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-slate-950/70 backdrop-blur-md text-white flex items-center justify-center hover:bg-amber-500 hover:text-slate-950 transition active:scale-90">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <div class="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
+          <div class="min-w-0">
+            <span id="detailCategory" class="inline-block px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider chip-best">Kategori</span>
+            <h3 id="detailTitle" class="text-xl sm:text-2xl font-black text-white mt-1.5 truncate">Nama Tempat</h3>
+            <p id="detailDistrict" class="text-xs text-amber-300 flex items-center mt-1">
+              <i class="fa-solid fa-location-dot mr-1"></i> Daerah
+            </p>
+          </div>
+          <button id="detailFavToggleBtn" onclick="toggleFavoriteFromDetail()" class="flex-shrink-0 w-11 h-11 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-white/15 text-slate-300 flex items-center justify-center hover:text-rose-500 hover:border-rose-500/50 transition active:scale-90">
+            <i class="fa-regular fa-heart text-lg"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="p-5 overflow-y-auto space-y-4 text-xs sm:text-sm text-slate-300 safe-bottom">
+        <div class="flex items-center justify-between p-3.5 rounded-2xl bg-slate-950/60 border border-white/8">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-star text-amber-400"></i>
+            <span id="detailRating" class="font-bold text-white">4.8</span>
+            <span class="text-slate-400 text-[11px]">Penilaian Pelawat</span>
+          </div>
+          <div class="text-right">
+            <span id="detailPrice" class="font-bold text-amber-400">Percuma</span>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="font-bold text-[11px] uppercase tracking-wider text-slate-400 mb-1.5">Perihal Menarik</h4>
+          <p id="detailDescription" class="leading-relaxed text-slate-300 text-xs sm:text-sm">Penerangan ringkas...</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5 text-xs">
+          <div class="p-3.5 rounded-2xl bg-slate-950/50 border border-white/8">
+            <span class="text-slate-400 block text-[10px] mb-0.5">Waktu Cadangan</span>
+            <span id="detailHours" class="font-medium text-white">09:00 AM - 06:00 PM</span>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-slate-950/50 border border-white/8">
+            <span class="text-slate-400 block text-[10px] mb-0.5">Kemudahan</span>
+            <span id="detailFacilities" class="font-medium text-white">Parkir, Surau, Kafe</span>
+          </div>
+        </div>
+
+        <div class="pt-1 flex gap-2.5">
+          <button id="openInMapBtn" onclick="focusOnMapAndShow()" class="btn-ghost flex-1 py-3.5 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-bold text-xs flex items-center justify-center border border-white/10">
+            <i class="fa-solid fa-map mr-2 text-amber-400"></i> Tunjuk di Peta
+          </button>
+          <a id="googleMapsRedirectBtn" href="#" target="_blank" class="btn-gold flex-1 py-3.5 rounded-2xl font-bold text-xs flex items-center justify-center">
+            <i class="fa-solid fa-diamond-turn-right mr-2"></i> Navigasi
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================ AUTH MODAL ============================ -->
+  <div id="authModal" class="fixed inset-0 z-50 hidden bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-md rounded-[28px] p-6 relative modal-in shadow-2xl border border-amber-500/30">
+      <button onclick="closeAuthModal()" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/5 text-slate-300 flex items-center justify-center hover:bg-white/10 hover:text-white transition active:scale-90">
+        <i class="fa-solid fa-xmark text-sm"></i>
+      </button>
+
+      <div class="text-center mb-5">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-300 to-amber-600 text-slate-950 flex items-center justify-center mx-auto mb-3 text-2xl font-bold shadow-[0_0_30px_-6px_rgba(245,158,11,.9)]">
+          <i class="fa-solid fa-shield-cat"></i>
+        </div>
+        <h3 id="authModalTitle" class="text-lg font-black text-white">Log Masuk Pengguna</h3>
+        <p class="text-[11px] text-slate-400 mt-0.5">Sistem Autentikasi Mengikut Peranan (RBAC)</p>
+      </div>
+
+      <div class="flex rounded-2xl bg-slate-950/70 p-1 mb-4 border border-white/8">
+        <button id="tabBtnLogin" onclick="switchAuthTab('login')" class="flex-1 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-amber-300 to-amber-500 text-slate-950 transition">
+          Log Masuk
+        </button>
+        <button id="tabBtnRegister" onclick="switchAuthTab('register')" class="flex-1 py-2 text-xs font-bold rounded-xl text-slate-400 hover:text-white transition">
+          Daftar Baharu
+        </button>
+      </div>
+
+      <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-3">
+        <div id="nameFieldGroup" class="hidden">
+          <label class="block text-[11px] font-semibold text-slate-300 mb-1.5">Nama Penuh</label>
+          <div class="relative">
+            <i class="fa-solid fa-user absolute left-3.5 top-3.5 text-slate-500 text-xs"></i>
+            <input type="text" id="authNameInput" placeholder="cth: Ahmad Zaki"
+              class="w-full pl-9 pr-3 py-3 rounded-xl bg-slate-950/70 border border-white/10 text-xs text-white focus:outline-none focus:border-amber-400/70 focus:ring-2 focus:ring-amber-400/15 transition">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-300 mb-1.5">Alamat Emel</label>
+          <div class="relative">
+            <i class="fa-solid fa-envelope absolute left-3.5 top-3.5 text-slate-500 text-xs"></i>
+            <input type="email" id="authEmailInput" required placeholder="admin@perak.my"
+              class="w-full pl-9 pr-3 py-3 rounded-xl bg-slate-950/70 border border-white/10 text-xs text-white focus:outline-none focus:border-amber-400/70 focus:ring-2 focus:ring-amber-400/15 transition">
+          </div>
+        </div>
+
+        <div>
+          <div class="flex justify-between items-center mb-1.5">
+            <label class="text-[11px] font-semibold text-slate-300">Kata Laluan</label>
+            <span id="demoAdminFill" onclick="prefillAdminDemo()" class="text-[10px] text-amber-400 hover:text-amber-300 hover:underline cursor-pointer transition">Guna Login Admin Demo</span>
+          </div>
+          <div class="relative">
+            <i class="fa-solid fa-lock absolute left-3.5 top-3.5 text-slate-500 text-xs"></i>
+            <input type="password" id="authPasswordInput" required placeholder="••••••••"
+              class="w-full pl-9 pr-10 py-3 rounded-xl bg-slate-950/70 border border-white/10 text-xs text-white focus:outline-none focus:border-amber-400/70 focus:ring-2 focus:ring-amber-400/15 transition">
+            <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3 top-3 text-slate-400 hover:text-slate-200 text-xs transition">
+              <i id="passwordEyeIcon" class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div id="roleSelectGroup" class="hidden">
+          <label class="block text-[11px] font-semibold text-slate-300 mb-1.5">Daftar Sebagai Peranan</label>
+          <select id="authRoleSelect" class="w-full px-3 py-3 rounded-xl bg-slate-950/70 border border-white/10 text-xs text-white focus:outline-none focus:border-amber-400/70 transition">
+            <option value="customer">Pelanggan / Pelancong (Customer)</option>
+            <option value="admin">Pentadbir (Admin - Untuk Ujian)</option>
+          </select>
+        </div>
+
+        <div id="authErrorMessage" class="hidden p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[11px] pop-in">
+          Emel atau kata laluan tidak tepat.
+        </div>
+
+        <button type="submit" id="authSubmitBtn" class="btn-gold w-full mt-2 py-3.5 rounded-2xl font-bold text-xs">
+          Log Masuk Sekarang
+        </button>
+      </form>
+
+      <div class="mt-4 pt-4 border-t border-white/8 text-center">
+        <button onclick="closeAuthModal()" class="text-xs text-slate-400 hover:text-white transition">
+          Teruskan sebagai <span class="text-amber-400 underline">Pelawat (Guest)</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================ ADMIN FORM MODAL ============================ -->
+  <div id="adminFormModal" class="fixed inset-0 z-50 hidden bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 overflow-y-auto">
+    <div class="glass-panel w-full max-w-lg rounded-[28px] p-5 my-8 relative modal-in shadow-2xl border border-amber-500/30">
+      <div class="flex items-center justify-between pb-3 border-b border-white/8 mb-4">
+        <div>
+          <h3 id="adminFormTitle" class="text-base font-bold text-white">Tambah Destinasi Baru</h3>
+          <p class="text-[11px] text-slate-400">Kemas kini inventori kandungan pelancongan Perak</p>
+        </div>
+        <button onclick="closeAdminFormModal()" class="w-9 h-9 rounded-full bg-white/5 text-slate-300 flex items-center justify-center hover:bg-white/10 transition active:scale-90">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+
+      <form id="adminPlaceForm" onsubmit="handleSavePlace(event)" class="space-y-3 text-xs">
+        <input type="hidden" id="editPlaceId">
+
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1.5">Nama Tempat / Tarikan *</label>
+          <input type="text" id="formName" required placeholder="cth: Menara Condong Teluk Intan"
+            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/70 border border-white/10 text-white focus:outline-none focus:border-amber-400/70 focus:ring-2 focus:ring-amber-400/15 transition">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1.5">Kategori *</label>
+            <select id="formCategory" class="w-full px-3 py-2.5 rounded-xl bg-slate-950/70 border border-white/10 text-white focus:outline-none focus:border-amber-400/70 transition">
+              <option value="best">Best in Perak</option>
+              <option value="hotel">Hotel &amp; Resort</option>
+              <option value="cafe">Coffee Shop</option>
+              <option value="nature">Alam Semulajadi</option>
+              <option value="heritage">Warisan &amp; Sejarah</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1.5">Daerah *</label>
+            <select id="formDistrict" class="w-full px-3 py-2.5 rounded-xl bg-slate-950/70 border border-white/10 text-white focus:outline-none focus:border-amber-400/70 transition">
+              <option value="Kinta (Ipoh)">Kinta (Ipoh)</option>
+              <option value="Larut, Matang & Selama (Taiping)">Taiping</option>
+              <option value="Kuala Kangsar">Kuala Kangsar</option>
+              <option value="Hilir Perak (Teluk Intan)">Teluk Intan</option>
+              <option value="Manjung (Pangkor/Lumut)">Manjung (Pangkor)</option>
+              <option value="Hulu Perak (Gerik/Belum)">Hulu Perak (Belum)</option>
+              <option value="Kampar">Kampar</option>
+              <option value="Batang Padang (Tapah)">Tapah</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1.5">Rating (1.0 - 5.0)</label>
+            <input type="number" id="formRating" step="0.1" min="1" max="5" value="4.8"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/70 border border-white/10 text-white focus:outline-none focus:border-amber-400/70 transition">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1.5">Anggaran Harga</label>
+            <input type="text" id="formPrice" placeholder="cth: Percuma / RM 15" value="Percuma"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/70 border border-white/10 text-white focus:outline-none focus:border-amber-400/70 transition">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1.5">Latitude</label>
+            <input type="number" id="formLat" step="any" required placeholder="4.5975"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/70 border border-white/10 text-white focus:outline-none focus:border-amber-400/70 transition">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1.5">Longitude</label>
+            <input type="number" id="formLng" step="any" required placeholder="101.0901"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/70 border border-white/10 text-white focus:outline-none focus:border-amber-400/70 transition">
+          </div>
+        </div>
+
+        <div class="space-y-2 p-3.5 rounded-2xl bg-slate-950/60 border border-white/8">
+          <label class="block font-semibold text-slate-300">Gambar Lokasi (Muat naik atau URL)</label>
+          <input type="file" id="formFileInput" accept="image/*" onchange="handleImageBase64(this)"
+            class="w-full text-slate-400 text-[10px] file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:bg-gradient-to-r file:from-amber-300 file:to-amber-500 file:text-slate-950 hover:file:brightness-110 file:transition">
+          <input type="text" id="formImageUrl" placeholder="Atau pautkan URL imej..."
+            class="w-full px-3.5 py-2 rounded-lg bg-slate-900/70 border border-white/10 text-white text-[11px] focus:outline-none focus:border-amber-400/70 transition">
+          <div id="imagePreviewContainer" class="hidden mt-2">
+            <img id="formImagePreview" src="" alt="Pratonton" class="h-24 w-full object-cover rounded-xl border border-amber-500/30">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1.5">Penerangan / Sorotan Menarik</label>
+          <textarea id="formDescription" rows="2" placeholder="Tulis ringkasan tarikan tempat ini..."
+            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/70 border border-white/10 text-white focus:outline-none focus:border-amber-400/70 transition resize-none"></textarea>
+        </div>
+
+        <div class="pt-2 flex gap-2.5">
+          <button type="button" onclick="closeAdminFormModal()" class="btn-ghost w-1/2 py-3 rounded-2xl bg-white/5 text-slate-300 font-semibold hover:bg-white/10">
+            Batal
+          </button>
+          <button type="submit" class="btn-gold w-1/2 py-3 rounded-2xl font-bold">
+            Simpan Maklumat
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================ CONFIRM DIALOG ============================ -->
+  <div id="confirmDialog" class="fixed inset-0 z-50 hidden bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-sm rounded-[28px] p-6 text-center modal-in shadow-2xl border border-rose-500/25">
+      <div class="w-14 h-14 rounded-full bg-rose-500/15 text-rose-400 flex items-center justify-center mx-auto mb-3 text-xl border border-rose-500/35">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <h4 id="confirmDialogTitle" class="text-base font-bold text-white mb-1.5">Pengesahan Diperlukan</h4>
+      <p id="confirmDialogMessage" class="text-xs text-slate-300 mb-5 leading-relaxed">Adakah anda pasti untuk meneruskan tindakan ini?</p>
+      <div class="flex gap-2.5">
+        <button id="confirmCancelBtn" class="btn-ghost flex-1 py-2.5 rounded-2xl bg-white/5 text-slate-300 text-xs font-semibold hover:bg-white/10">
+          Batal
+        </button>
+        <button id="confirmProceedBtn" class="flex-1 py-2.5 rounded-2xl bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-400 hover:to-rose-500 text-white text-xs font-bold shadow-lg shadow-rose-600/25 transition active:scale-95">
+          Teruskan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================ TOASTS ============================ -->
+  <div id="toastContainer" class="fixed top-20 right-4 left-4 sm:left-auto sm:w-80 z-[60] pointer-events-none flex flex-col gap-2.5"></div>
+
+  <!-- ============================ MAP PICKER MODAL (OpenStreetMap) ============================ -->
+  <div id="mapApiModal" class="fixed inset-0 z-50 hidden bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-md rounded-[28px] p-5 relative modal-in shadow-2xl border border-amber-500/30">
+      <div class="flex items-center justify-between pb-3 border-b border-white/8 mb-4">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/35 flex items-center justify-center text-amber-400">
+            <i class="fa-solid fa-layer-group text-xs"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white">Pilihan Peta</h3>
+            <p class="text-[10px] text-slate-400">OpenStreetMap — tanpa API key</p>
+          </div>
+        </div>
+        <button onclick="closeMapApiModal()" class="w-8 h-8 rounded-full bg-white/5 text-slate-300 flex items-center justify-center hover:bg-white/10 transition active:scale-90">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3.5 text-xs text-slate-300">
+        <div>
+          <label class="block font-semibold mb-1.5 text-slate-200">Gaya Paparan Peta</label>
+          <select id="mapProviderSelect"
+            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/70 border border-white/10 text-white focus:outline-none focus:border-amber-400/70 transition">
+            <option value="carto">OpenStreetMap — Mod Gelap (CartoDB)</option>
+            <option value="osm">OpenStreetMap — Standard</option>
+            <option value="osmhot">OpenStreetMap — Humanitarian</option>
+          </select>
+        </div>
+
+        <div class="p-3.5 rounded-2xl bg-emerald-500/8 border border-emerald-500/25 text-[11px] space-y-1">
+          <div class="flex items-center text-emerald-300 font-bold">
+            <i class="fa-solid fa-shield-halved mr-1.5"></i> 100% Percuma — Tanpa API Key
+          </div>
+          <p class="text-[10px] leading-relaxed text-slate-300">
+            Semua pilihan peta menggunakan data <strong>OpenStreetMap</strong>. Tiada token diperlukan dan tiada caj per-request.
+          </p>
+        </div>
+
+        <div class="p-3.5 rounded-2xl bg-amber-500/8 border border-amber-500/25 text-[11px] space-y-1">
+          <div class="flex items-center text-amber-300 font-bold">
+            <i class="fa-brands fa-google text-amber-400 mr-1.5"></i> Navigasi Google Maps
+          </div>
+          <p class="text-[10px] leading-relaxed text-slate-300">
+            Butang <em>Navigasi</em> pada setiap destinasi akan membuka aplikasi <strong>Google Maps</strong> pada telefon pengguna — percuma sepenuhnya dan tiada konfigurasi diperlukan.
+          </p>
+        </div>
+
+        <div class="pt-2 flex gap-2.5">
+          <button type="button" onclick="closeMapApiModal()" class="btn-ghost flex-1 py-3 rounded-2xl bg-white/5 text-slate-300 font-semibold hover:bg-white/10">
+            Batal
+          </button>
+          <button type="button" onclick="saveMapApiSettings()" class="btn-gold flex-1 py-3 rounded-2xl font-bold">
+            Gunakan Peta Ini
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================
+       DATA STORE
+       ========================================================== */
+    const DEFAULT_PLACES = [
+      {
+        id: "pk-01", name: "Kellie's Castle", category: "heritage", district: "Batu Gajah",
+        rating: 4.8, price: "RM 10", hours: "09:00 AM - 05:00 PM",
+        facilities: "Parkir, Kafe, Muzium, Tandas",
+        lat: 4.4754, lng: 101.0872, isBest: true,
+        image: "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=900&q=80",
+        description: "Kastil agam era penjajah British yang dibina oleh William Kellie-Smith dengan seni bina Moghul, laluan rahsia bawah tanah dan aura misteri yang memukau."
+      },
+      {
+        id: "pk-02", name: "Tasik Cermin (Mirror Lake)", category: "nature", district: "Kinta (Ipoh)",
+        rating: 4.9, price: "RM 4 - RM 25", hours: "09:00 AM - 06:00 PM",
+        facilities: "Bot Elektrik, Terowong Batu Kapur, Kafe",
+        lat: 4.5615, lng: 101.1189, isBest: true,
+        image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80",
+        description: "Lagun tersembunyi dikelilingi dinding bukit batu kapur megah yang memantulkan bayangan tenang persis cermin gergasi, boleh diterokai menaiki bot elektrik."
+      },
+      {
+        id: "pk-03", name: "Chang Jiang White Coffee", category: "cafe", district: "Kinta (Ipoh)",
+        rating: 4.7, price: "RM 6 - RM 25", hours: "08:00 AM - 06:00 PM",
+        facilities: "Taman Klasik, AC, Parkir, WiFi",
+        lat: 4.5975, lng: 101.0880, isBest: true,
+        image: "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=900&q=80",
+        description: "Pengalaman kopi putih Ipoh aroma pekat asli dalam suasana banglo kolonial klasik yang asri di tepian People's Park, Ipoh."
+      },
+      {
+        id: "pk-04", name: "The Banjaran Hotsprings Retreat", category: "hotel", district: "Kinta (Ipoh)",
+        rating: 4.9, price: "RM 1,450++", hours: "24 Jam",
+        facilities: "Kolam Air Panas Semulajadi, Gua Meditasi, Spa Mewah",
+        lat: 4.6306, lng: 101.1549, isBest: true,
+        image: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=900&q=80",
+        description: "Retreat 5-bintang bertaraf antarabangsa dikelilingi gua batu kapur purba berusia 260 juta tahun dengan kolam wap geoterma semulajadi."
+      },
+      {
+        id: "pk-05", name: "Menara Condong Teluk Intan", category: "heritage", district: "Hilir Perak (Teluk Intan)",
+        rating: 4.7, price: "Percuma", hours: "08:00 AM - 10:00 PM",
+        facilities: "Dataran Jam, Pencahayaan Malam, Gerai Cenderahati",
+        lat: 4.0253, lng: 101.0197, isBest: true,
+        image: "https://images.unsplash.com/photo-1564507592333-c60657eea523?auto=format&fit=crop&w=900&q=80",
+        description: "Monumen bersejarah dibina tahun 1885 oleh Leong Choon Chong. Menara setinggi 85 kaki ini condong seperti Menara Pisa dan menjadi lambang Teluk Intan."
+      },
+      {
+        id: "pk-06", name: "Taman Tasik Taiping", category: "nature", district: "Larut, Matang & Selama (Taiping)",
+        rating: 4.8, price: "Percuma", hours: "24 Jam",
+        facilities: "Laluan Joging, Kayuh Bot, Tandas, Taman Permainan",
+        lat: 4.8569, lng: 100.7513, isBest: true,
+        image: "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=900&q=80",
+        description: "Taman awam terawal di Malaysia (1880), dipagari pepohon Hujan Emas (Rain Trees) yang melengkung indah mencecah permukaan air tasik."
+      },
+      {
+        id: "pk-07", name: "Sin Boon Kee Coffee Concept Store", category: "cafe", district: "Larut, Matang & Selama (Taiping)",
+        rating: 4.6, price: "RM 5 - RM 20", hours: "09:00 AM - 06:00 PM",
+        facilities: "Coffee Roasting Corner, WiFi, Pastri Segar",
+        lat: 4.8519, lng: 100.7420, isBest: false,
+        image: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=900&q=80",
+        description: "Pemanggang kopi legasi tertua di Taiping sejak 1937, menyajikan kopi Hainan pekat berkualiti tinggi dan hidangan sarapan autentik."
+      },
+      {
+        id: "pk-08", name: "Pangkor Laut Resort", category: "hotel", district: "Manjung (Pangkor/Lumut)",
+        rating: 4.9, price: "RM 980++", hours: "24 Jam",
+        facilities: "Villa Atas Air, Spa Village, Pantai Emerald Bay Peribadi",
+        lat: 4.1989, lng: 100.5518, isBest: true,
+        image: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=900&q=80",
+        description: "Pulau persendirian yang diiktiraf mendiang Luciano Pavarotti sebagai syurga dunia, menawarkan villa bertiang atas laut yang mengagumkan."
+      }
+    ];
+
+    /* ==========================================================
+       STATE
+       ========================================================== */
+    const State = {
+      currentUser: null,
+      currentView: 'home',
+      activeCategory: 'all',
+      searchQuery: '',
+      places: [...DEFAULT_PLACES],
+      favorites: new Set(),
+      activeDetailPlace: null,
+      leafletMap: null,
+      currentTileLayer: null,
+      mapMarkers: [],
+      mapSettings: { provider: 'carto' },
+      sidebarOpen: false,
+      fabOpen: false
+    };
+
+    const DEMO_ACCOUNTS = {
+      'admin@perak.my': { name: "Dato' Pengarah Pelancongan", role: 'admin', pass: 'admin123' },
+      'ahmad@gmail.com': { name: 'Ahmad Zaki', role: 'customer', pass: 'user123' }
+    };
+
+    const CAT = {
+      hotel:    { label: 'Hotel & Resort',   icon: 'fa-hotel',        chip: 'chip-hotel'    },
+      cafe:     { label: 'Coffee Shop',      icon: 'fa-mug-hot',      chip: 'chip-cafe'     },
+      nature:   { label: 'Alam Semula',      icon: 'fa-tree',         chip: 'chip-nature'   },
+      heritage: { label: 'Warisan Sejarah',  icon: 'fa-landmark',     chip: 'chip-heritage' },
+      best:     { label: 'Best Perak',       icon: 'fa-crown',        chip: 'chip-best'     },
+      _default: { label: 'Tarikan',          icon: 'fa-location-dot', chip: 'chip-best'     }
+    };
+    const catInfo = c => CAT[c] || CAT._default;
+
+    const TILE_PROVIDERS = {
+      carto:  { url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', subdomains: 'abcd' },
+      osm:    { url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',            subdomains: 'abc'  },
+      osmhot: { url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',        subdomains: 'abc'  }
+    };
+
+    /* ==========================================================
+       BOOT
+       ========================================================== */
+    window.addEventListener('DOMContentLoaded', () => {
+      loadPlaces();
+      loadSavedMapSettings();
+      renderFeaturedReel();
+      renderPlacesGrid();
+      updateAuthUI();
+      initLeafletMap();
+      setupSidebarGestures();
+      setupFabOutsideClick();
+      setupPWAOfflineWorker();
+    });
+
+    function loadPlaces() {
+      State.places = [...DEFAULT_PLACES];
+      updateAdminDashboardStats();
+    }
+
+    /* ==========================================================
+       FLOATING ACTION BUTTON — HOTEL & MAP
+       ========================================================== */
+    function openFab() {
+      const menu = document.getElementById('fabMenu');
+      const main = document.getElementById('fabMain');
+      if (!menu || !main) return;
+      menu.classList.add('open');
+      main.classList.add('open');
+      main.setAttribute('aria-expanded', 'true');
+      State.fabOpen = true;
+    }
+
+    function closeFab() {
+      const menu = document.getElementById('fabMenu');
+      const main = document.getElementById('fabMain');
+      if (!menu || !main) return;
+      menu.classList.remove('open');
+      main.classList.remove('open');
+      main.setAttribute('aria-expanded', 'false');
+      State.fabOpen = false;
+    }
+
+    function toggleFab(event) {
+      if (event) event.stopPropagation();
+      State.fabOpen ? closeFab() : openFab();
+    }
+
+    function fabAction(type) {
+      closeFab();
+
+      if (type === 'hotel') {
+        // Pergi ke Home, tapis kategori hotel, dan tatal ke grid
+        if (State.currentView !== 'home') navigateTo('home');
+        setTimeout(() => {
+          clearSearch();
+          setCategoryFilter('hotel');
+          setTimeout(() => {
+            document.getElementById('gridTitle')
+              ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 150);
+          showToast('Menunjukkan semua Hotel & Resort di Perak.', 'info');
+        }, State.currentView !== 'home' ? 220 : 60);
+
+      } else if (type === 'map') {
+        navigateTo('map');
+        setTimeout(() => {
+          showToast('Peta interaktif Perak dibuka.', 'info');
+        }, 320);
+      }
+    }
+
+    /* Tutup FAB apabila tekan di luar kawasan */
+    function setupFabOutsideClick() {
+      document.addEventListener('click', (e) => {
+        const container = document.getElementById('fabContainer');
+        if (container && !container.contains(e.target) && State.fabOpen) {
+          closeFab();
+        }
+      });
+    }
+
+    /* ==========================================================
+       SIDEBAR NAVIGATION
+       ========================================================== */
+    function openSidebar() {
+      closeFab();
+      const sb = document.getElementById('appSidebar');
+      const ov = document.getElementById('sidebarOverlay');
+      if (!sb) return;
+      sb.classList.add('open');
+      ov.classList.add('show');
+      State.sidebarOpen = true;
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeSidebar() {
+      const sb = document.getElementById('appSidebar');
+      const ov = document.getElementById('sidebarOverlay');
+      if (!sb) return;
+      sb.classList.remove('open');
+      ov.classList.remove('show');
+      State.sidebarOpen = false;
+      document.body.style.overflow = '';
+    }
+
+    function toggleSidebar() {
+      State.sidebarOpen ? closeSidebar() : openSidebar();
+    }
+
+    function setupSidebarGestures() {
+      let touchStartX = 0, touchStartY = 0, tracking = false, fromEdge = false;
+
+      document.addEventListener('touchstart', (e) => {
+        const t = e.touches[0];
+        touchStartX = t.clientX;
+        touchStartY = t.clientY;
+        fromEdge = touchStartX <= 28;
+        tracking = fromEdge || State.sidebarOpen;
+      }, { passive: true });
+
+      document.addEventListener('touchend', (e) => {
+        if (!tracking) return;
+        const t = e.changedTouches[0];
+        const dx = t.clientX - touchStartX;
+        const dy = Math.abs(t.clientY - touchStartY);
+
+        if (dy > 70) { tracking = false; return; }
+
+        if (!State.sidebarOpen && fromEdge && dx > 55) openSidebar();
+        if (State.sidebarOpen && dx < -55) closeSidebar();
+        tracking = false;
+      }, { passive: true });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          if (State.sidebarOpen) closeSidebar();
+          if (State.fabOpen) closeFab();
+        }
+      });
+    }
+
+    /* ==========================================================
+       NAVIGATION
+       ========================================================== */
+    function navigateTo(viewId) {
+      closeSidebar();
+      closeFab();
+
+      if (viewId === 'admin') {
+        if (!State.currentUser || State.currentUser.role !== 'admin') {
+          showToast('Akses Ditolak: Hanya Pentadbir (Admin) dibenarkan masuk.', 'error');
+          openAuthModal();
+          return;
+        }
+      }
+
+      const views = ['home', 'map', 'best', 'favorites', 'admin', 'profile'];
+      views.forEach(v => {
+        const el = document.getElementById(`view-${v}`);
+        if (el) el.classList.add('hidden');
+      });
+
+      const targetEl = document.getElementById(`view-${viewId}`);
+      if (targetEl) {
+        targetEl.classList.remove('hidden');
+        targetEl.classList.remove('page-enter');
+        void targetEl.offsetWidth;
+        targetEl.classList.add('page-enter');
+      }
+
+      State.currentView = viewId;
+
+      document.querySelectorAll('.side-item').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.getElementById(`nav-btn-${viewId}`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      if (viewId === 'map') {
+        setTimeout(() => {
+          if (State.leafletMap) {
+            State.leafletMap.invalidateSize();
+            resetMapView();
+          }
+        }, 220);
+      } else if (viewId === 'favorites') {
+        renderFavorites();
+      } else if (viewId === 'best') {
+        renderBestList();
+      } else if (viewId === 'admin') {
+        renderAdminTable();
+        updateAdminDashboardStats();
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    /* ==========================================================
+       IMAGE HYDRATION
+       ========================================================== */
+    function hydrateImages() {
+      document.querySelectorAll('.fade-img').forEach(img => {
+        if (img.complete && img.naturalWidth > 0) img.classList.add('loaded');
+      });
+    }
+    function imgLoaded(el) { el.classList.add('loaded'); }
+
+    /* ==========================================================
+       RENDER: FEATURED REEL
+       ========================================================== */
+    function renderFeaturedReel() {
+      const reel = document.getElementById('featuredReel');
+      if (!reel) return;
+
+      const bestOnes = State.places.filter(p => p.isBest || p.rating >= 4.8);
+      const fav = State.favorites;
+
+      reel.innerHTML = bestOnes.map((p, i) => {
+        const ci = catInfo(p.category);
+        return `
+        <div onclick="openPlaceDetail('${p.id}')" style="animation-delay:${i * 55}ms"
+             class="place-card reveal flex-shrink-0 w-[264px] sm:w-[288px] glass-card rounded-3xl overflow-hidden cursor-pointer group">
+          <div class="thumb h-40 relative overflow-hidden bg-slate-900">
+            <img src="${p.image}" alt="${p.name}" onload="imgLoaded(this)" onerror="this.src='https://placehold.co/600x400/0b1020/f59e0b?text=Perak'"
+                 class="fade-img w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-[#0a0f1e] via-transparent to-transparent"></div>
+
+            <span class="absolute top-3 left-3 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${ci.chip} shadow-lg">
+              ${catInfo(p.category).label}
+            </span>
+
+            <button onclick="event.stopPropagation(); toggleFavorite('${p.id}', this)"
+              class="absolute top-2.5 right-2.5 w-9 h-9 rounded-full bg-slate-950/60 backdrop-blur-md border border-white/15 text-slate-200 hover:text-rose-400 flex items-center justify-center transition active:scale-90">
+              <i class="${fav.has(p.id) ? 'fa-solid fa-heart text-rose-500' : 'fa-regular fa-heart'} text-xs"></i>
+            </button>
+
+            <div class="absolute bottom-2.5 left-3 right-3 flex items-center justify-between">
+              <span class="text-amber-300 font-semibold text-[10px] flex items-center">
+                <i class="fa-solid fa-location-dot mr-1"></i>${p.district}
+              </span>
+              <span class="px-2 py-0.5 rounded-lg bg-black/60 backdrop-blur-sm text-amber-400 font-bold text-[10px]">
+                <i class="fa-solid fa-star text-[9px] mr-0.5"></i>${p.rating}
+              </span>
+            </div>
+          </div>
+
+          <div class="p-4 space-y-1.5">
+            <h3 class="font-bold text-white text-sm truncate group-hover:text-amber-300 transition">${p.name}</h3>
+            <p class="text-slate-400 text-[11px] line-clamp-2 leading-relaxed">${p.description}</p>
+          </div>
+        </div>`;
+      }).join('');
+
+      hydrateImages();
+    }
+
+    /* ==========================================================
+       RENDER: PLACES GRID
+       ========================================================== */
+    function renderPlacesGrid() {
+      const grid = document.getElementById('placesGrid');
+      const counterText = document.getElementById('placesCountText');
+      if (!grid) return;
+
+      const q = State.searchQuery.toLowerCase();
+
+      const filtered = State.places.filter(place => {
+        const matchesCategory = State.activeCategory === 'all' ? true :
+          State.activeCategory === 'best' ? place.isBest : place.category === State.activeCategory;
+
+        const matchesQuery = !q ? true : (
+          place.name.toLowerCase().includes(q) ||
+          place.district.toLowerCase().includes(q) ||
+          place.description.toLowerCase().includes(q)
+        );
+
+        return matchesCategory && matchesQuery;
+      });
+
+      if (counterText) counterText.textContent = `${filtered.length} tempat dijumpai`;
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full p-10 text-center glass-panel rounded-3xl pop-in">
+            <div class="w-16 h-16 mx-auto rounded-full bg-amber-500/10 border border-amber-500/25 flex items-center justify-center mb-4">
+              <i class="fa-solid fa-magnifying-glass text-2xl text-amber-500/70"></i>
+            </div>
+            <h4 class="text-sm font-bold text-white">Tiada tempat sepadan dengan carian anda</h4>
+            <p class="text-xs text-slate-400 mt-1.5">Cuba tukar kata kunci atau pilih kategori lain.</p>
+            <button onclick="setCategoryFilter('all'); clearSearch()" class="btn-gold mt-4 px-5 py-2.5 rounded-2xl font-bold text-xs">
+              Tetap Semula Penapis
+            </button>
+          </div>`;
+        return;
+      }
+
+      grid.innerHTML = filtered.map((p, i) => {
+        const ci = catInfo(p.category);
+        const isFav = State.favorites.has(p.id);
+        return `
+        <div onclick="openPlaceDetail('${p.id}')" style="animation-delay:${Math.min(i, 9) * 50}ms"
+             class="place-card reveal glass-card rounded-3xl overflow-hidden cursor-pointer group flex flex-col justify-between">
+
+          <div>
+            <div class="thumb h-48 relative overflow-hidden bg-slate-900">
+              <img src="${p.image}" alt="${p.name}" onload="imgLoaded(this)" onerror="this.src='https://placehold.co/600x400/0b1020/f59e0b?text=Perak'"
+                   class="fade-img w-full h-full object-cover">
+              <div class="absolute inset-0 bg-gradient-to-t from-[#0a0f1e] via-transparent to-transparent"></div>
+
+              <span class="absolute top-3 left-3 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${ci.chip} shadow-lg">
+                ${ci.label}
+              </span>
+
+              <button onclick="event.stopPropagation(); toggleFavorite('${p.id}', this)"
+                class="absolute top-2.5 right-2.5 w-9 h-9 rounded-full bg-slate-950/60 backdrop-blur-md border border-white/15 text-slate-200 hover:text-rose-400 flex items-center justify-center transition active:scale-90">
+                <i class="${isFav ? 'fa-solid fa-heart text-rose-500' : 'fa-regular fa-heart'} text-xs"></i>
+              </button>
+
+              <div class="absolute bottom-3 left-3 right-3 flex justify-between items-center">
+                <span class="text-amber-300 font-semibold text-[11px] flex items-center">
+                  <i class="fa-solid fa-location-dot mr-1"></i>${p.district}
+                </span>
+                <span class="px-2 py-0.5 rounded-lg bg-black/60 backdrop-blur-sm text-amber-400 font-bold text-[10px]">
+                  <i class="fa-solid fa-star text-[9px] mr-0.5"></i>${p.rating}
+                </span>
+              </div>
+            </div>
+
+            <div class="p-4 space-y-1.5">
+              <h3 class="font-bold text-white text-sm group-hover:text-amber-400 transition">${p.name}</h3>
+              <p class="text-slate-400 text-xs line-clamp-2 leading-relaxed">${p.description}</p>
+            </div>
+          </div>
+
+          <div class="px-4 pb-4 pt-0 flex items-center justify-between border-t border-white/8 mt-1 pt-3 text-[11px]">
+            <span class="text-slate-400">Harga: <strong class="text-white">${p.price}</strong></span>
+            <span class="text-amber-400 font-semibold flex items-center group-hover:translate-x-1 transition-transform duration-300">
+              Butiran <i class="fa-solid fa-chevron-right ml-1 text-[9px]"></i>
+            </span>
+          </div>
+        </div>`;
+      }).join('');
+
+      hydrateImages();
+    }
+
+    /* ==========================================================
+       RENDER: BEST LIST
+       ========================================================== */
+    function renderBestList() {
+      const container = document.getElementById('bestListContainer');
+      if (!container) return;
+      const bestItems = State.places.filter(p => p.isBest);
+
+      container.innerHTML = bestItems.map((p, idx) => {
+        const ci = catInfo(p.category);
+        return `
+        <div onclick="openPlaceDetail('${p.id}')" style="animation-delay:${idx * 60}ms"
+             class="place-card reveal glass-panel p-3.5 sm:p-4 rounded-3xl flex flex-col sm:flex-row gap-4 items-center cursor-pointer">
+
+          <div class="relative w-full sm:w-48 h-40 rounded-2xl overflow-hidden flex-shrink-0 bg-slate-900">
+            <img src="${p.image}" alt="${p.name}" onload="imgLoaded(this)" class="fade-img w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent"></div>
+            <span class="absolute top-2.5 left-2.5 w-8 h-8 rounded-full bg-gradient-to-br from-amber-300 to-amber-600 text-slate-950 font-black text-xs flex items-center justify-center shadow-lg shadow-amber-600/40">
+              ${idx + 1}
+            </span>
+          </div>
+
+          <div class="flex-1 w-full space-y-2">
+            <div class="flex items-center justify-between gap-2">
+              <span class="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider ${ci.chip}">${ci.label}</span>
+              <span class="text-xs text-amber-300 font-bold"><i class="fa-solid fa-star text-amber-400"></i> ${p.rating}</span>
+            </div>
+            <h3 class="text-base font-bold text-white">${p.name}</h3>
+            <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed">${p.description}</p>
+            <div class="pt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-300">
+              <span><i class="fa-solid fa-location-dot text-amber-400 mr-1.5"></i>${p.district}</span>
+              <span><i class="fa-regular fa-clock text-amber-400 mr-1.5"></i>${p.hours || 'Setiap Hari'}</span>
+              <span><i class="fa-solid fa-ticket text-amber-400 mr-1.5"></i>${p.price}</span>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+
+      hydrateImages();
+    }
+
+    /* ==========================================================
+       LEAFLET MAP — OPENSTREETMAP ONLY
+       ========================================================== */
+    function initLeafletMap() {
+      const PERAK_CENTER = [4.5975, 101.0901];
+      try {
+        State.leafletMap = L.map('perakMap', { zoomControl: true, attributionControl: false })
+          .setView(PERAK_CENTER, 8);
+        applyTileLayer(State.mapSettings.provider);
+        updateMapMarkers();
+      } catch (err) {
+        console.error("Leaflet init error:", err);
+      }
+    }
+
+    function applyTileLayer(provider) {
+      if (!State.leafletMap) return;
+      if (State.currentTileLayer) State.leafletMap.removeLayer(State.currentTileLayer);
+
+      const conf = TILE_PROVIDERS[provider] || TILE_PROVIDERS.carto;
+      State.currentTileLayer = L.tileLayer(conf.url, {
+        subdomains: conf.subdomains,
+        maxZoom: 19
+      }).addTo(State.leafletMap);
+    }
+
+    function loadSavedMapSettings() {
+      try {
+        const saved = localStorage.getItem('travel_perak_map_settings');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (TILE_PROVIDERS[parsed.provider]) {
+            State.mapSettings = { provider: parsed.provider };
+          }
+        }
+      } catch (e) {
+        console.warn('LocalStorage error:', e);
+      }
+    }
+
+    function openMapApiModal() {
+      const select = document.getElementById('mapProviderSelect');
+      if (select) select.value = State.mapSettings.provider || 'carto';
+      document.getElementById('mapApiModal').classList.remove('hidden');
+    }
+
+    function closeMapApiModal() {
+      document.getElementById('mapApiModal').classList.add('hidden');
+    }
+
+    function saveMapApiSettings() {
+      const provider = document.getElementById('mapProviderSelect').value;
+      State.mapSettings = { provider };
+
+      try { localStorage.setItem('travel_perak_map_settings', JSON.stringify(State.mapSettings)); }
+      catch (e) { console.warn('LocalStorage save error:', e); }
+
+      applyTileLayer(provider);
+      closeMapApiModal();
+
+      const labelMap = {
+        carto: 'OpenStreetMap (Mod Gelap)',
+        osm: 'OpenStreetMap (Standard)',
+        osmhot: 'OpenStreetMap (Humanitarian)'
+      };
+      showToast(`Peta ditukar kepada ${labelMap[provider] || 'OpenStreetMap'}!`, 'success');
+    }
+
+    function updateMapMarkers() {
+      if (!State.leafletMap) return;
+
+      State.mapMarkers.forEach(m => State.leafletMap.removeLayer(m));
+      State.mapMarkers = [];
+
+      State.places.forEach(place => {
+        const ci = catInfo(place.category);
+        const customIcon = L.divIcon({
+          className: '',
+          html: `<div class="map-pin"><i class="fa-solid ${ci.icon}" style="color:#f59e0b;font-size:13px;"></i></div>`,
+          iconSize: [34, 34],
+          iconAnchor: [17, 17]
+        });
+
+        const marker = L.marker([place.lat, place.lng], { icon: customIcon }).addTo(State.leafletMap);
+
+        const popupContent = `
+          <div style="min-width:180px;padding:2px;">
+            <div style="font-weight:800;font-size:13px;color:#fff;margin-bottom:2px;">${place.name}</div>
+            <div style="font-size:10px;color:#f59e0b;margin-bottom:6px;">${place.district} • ${catInfo(place.category).label}</div>
+            <div style="font-size:11px;color:#cbd5e1;margin-bottom:8px;line-height:1.5;">${place.description.slice(0, 75)}...</div>
+            <button onclick="openPlaceDetail('${place.id}')"
+              style="background:linear-gradient(135deg,#fde68a,#f59e0b);color:#0b1020;font-weight:800;font-size:11px;padding:6px 8px;border-radius:10px;width:100%;border:none;cursor:pointer;">
+              Lihat Butiran
+            </button>
+          </div>`;
+
+        marker.bindPopup(popupContent);
+        State.mapMarkers.push(marker);
+      });
+    }
+
+    function resetMapView() {
+      if (State.leafletMap) State.leafletMap.setView([4.5975, 101.0901], 8);
+    }
+
+    function focusOnMapAndShow() {
+      const active = State.activeDetailPlace;
+      closePlaceDetailModal();
+      navigateTo('map');
+      if (active && State.leafletMap) {
+        setTimeout(() => {
+          State.leafletMap.setView([active.lat, active.lng], 13);
+          const found = State.mapMarkers.find(m => {
+            const ll = m.getLatLng();
+            return Math.abs(ll.lat - active.lat) < 0.001 && Math.abs(ll.lng - active.lng) < 0.001;
+          });
+          if (found) found.openPopup();
+        }, 320);
+      }
+    }
+
+    /* ==========================================================
+       PLACE DETAIL
+       ========================================================== */
+    function openPlaceDetail(placeId) {
+      const place = State.places.find(p => p.id === placeId);
+      if (!place) return;
+
+      State.activeDetailPlace = place;
+      const ci = catInfo(place.category);
+
+      document.getElementById('detailImg').src = place.image;
+      document.getElementById('detailTitle').textContent = place.name;
+      document.getElementById('detailCategory').textContent = ci.label;
+      document.getElementById('detailCategory').className =
+        `inline-block px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${ci.chip}`;
+      document.getElementById('detailDistrict').innerHTML = `<i class="fa-solid fa-location-dot mr-1"></i> ${place.district}`;
+      document.getElementById('detailRating').textContent = place.rating;
+      document.getElementById('detailPrice').textContent = place.price;
+      document.getElementById('detailDescription').textContent = place.description;
+      document.getElementById('detailHours').textContent = place.hours || "09:00 AM - 06:00 PM";
+      document.getElementById('detailFacilities').textContent = place.facilities || "Parkir, Tandas Awam";
+
+      const gmapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name + ' ' + place.district + ' Perak')}`;
+      document.getElementById('googleMapsRedirectBtn').href = gmapsLink;
+
+      updateDetailHeartIcon(place.id);
+      document.getElementById('placeDetailModal').classList.remove('hidden');
+    }
+
+    function closePlaceDetailModal() {
+      document.getElementById('placeDetailModal').classList.add('hidden');
+    }
+
+    function updateDetailHeartIcon(placeId) {
+      const favBtn = document.getElementById('detailFavToggleBtn');
+      if (!favBtn) return;
+      favBtn.innerHTML = State.favorites.has(placeId)
+        ? '<i class="fa-solid fa-heart text-rose-500 text-lg"></i>'
+        : '<i class="fa-regular fa-heart text-slate-300 text-lg"></i>';
+    }
+
+    function toggleFavoriteFromDetail() {
+      if (State.activeDetailPlace) {
+        toggleFavorite(State.activeDetailPlace.id);
+        updateDetailHeartIcon(State.activeDetailPlace.id);
+      }
+    }
+
+    /* ==========================================================
+       FAVORITES
+       ========================================================== */
+    function toggleFavorite(placeId, btnEl) {
+      if (!State.currentUser) {
+        showToast('Sila log masuk sebagai Pelanggan untuk menyimpan kegemaran.', 'warning');
+        openAuthModal();
+        return;
+      }
+
+      const icon = btnEl ? btnEl.querySelector('i') : null;
+
+      if (State.favorites.has(placeId)) {
+        State.favorites.delete(placeId);
+        showToast('Dikeluarkan daripada senarai kegemaran.', 'info');
+      } else {
+        State.favorites.add(placeId);
+        showToast('Berjaya ditambah ke senarai kegemaran!', 'success');
+        if (btnEl) {
+          btnEl.classList.add('heart-pop');
+          setTimeout(() => btnEl.classList.remove('heart-pop'), 520);
+        }
+      }
+
+      if (icon) {
+        const active = State.favorites.has(placeId);
+        icon.className = (active ? 'fa-solid fa-heart text-rose-500' : 'fa-regular fa-heart') + ' text-xs';
+      }
+
+      updateFavoritesUI();
+      renderFeaturedReel();
+      renderPlacesGrid();
+      if (State.currentView === 'favorites') renderFavorites();
+    }
+
+    function updateFavoritesUI() {
+      const count = State.favorites.size;
+      const navBadge = document.getElementById('navFavBadge');
+      const favCountBadge = document.getElementById('favCountBadge');
+      const profileCount = document.getElementById('profileBookmarkCount');
+      const adminStat = document.getElementById('statBookmarks');
+
+      if (navBadge) navBadge.classList.toggle('hidden', count === 0);
+      if (favCountBadge) favCountBadge.textContent = `${count} Disimpan`;
+      if (profileCount) profileCount.textContent = `${count} Tempat`;
+      if (adminStat) adminStat.textContent = count;
+    }
+
+    function renderFavorites() {
+      const container = document.getElementById('favoritesListContainer');
+      if (!container) return;
+
+      if (!State.currentUser) {
+        container.innerHTML = `
+          <div class="glass-panel p-10 rounded-3xl text-center space-y-4 pop-in">
+            <div class="w-16 h-16 mx-auto rounded-full bg-amber-500/10 border border-amber-500/25 flex items-center justify-center">
+              <i class="fa-solid fa-lock text-2xl text-amber-400/70"></i>
+            </div>
+            <h3 class="text-sm font-bold text-white">Log Masuk Diperlukan</h3>
+            <p class="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
+              Fungsi simpan kegemaran dikhaskan untuk Pelanggan (Customer) berdaftar.
+            </p>
+            <button onclick="openAuthModal()" class="btn-gold px-6 py-3 rounded-2xl font-bold text-xs">
+              Log Masuk Sekarang
+            </button>
+          </div>`;
+        return;
+      }
+
+      const favPlaces = State.places.filter(p => State.favorites.has(p.id));
+
+      if (favPlaces.length === 0) {
+        container.innerHTML = `
+          <div class="glass-panel p-10 rounded-3xl text-center space-y-4 pop-in">
+            <div class="w-16 h-16 mx-auto rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
+              <i class="fa-regular fa-heart text-2xl text-rose-400/70"></i>
+            </div>
+            <h3 class="text-sm font-bold text-white">Belum Ada Lokasi Disimpan</h3>
+            <p class="text-xs text-slate-400 leading-relaxed">Tekan ikon hati pada mana-mana destinasi untuk menyimpannya di sini.</p>
+            <button onclick="navigateTo('home')" class="btn-ghost px-5 py-2.5 rounded-2xl bg-white/5 text-amber-400 border border-amber-500/30 text-xs font-semibold">
+              Terokai Destinasi Perak
+            </button>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          ${favPlaces.map((p, i) => {
+            const ci = catInfo(p.category);
+            return `
+            <div style="animation-delay:${i * 55}ms"
+                 class="reveal place-card glass-card rounded-3xl p-3 flex gap-3 items-center justify-between">
+              <div onclick="openPlaceDetail('${p.id}')" class="flex items-center space-x-3 cursor-pointer overflow-hidden flex-1">
+                <img src="${p.image}" alt="${p.name}" onload="imgLoaded(this)" class="fade-img w-16 h-16 rounded-2xl object-cover flex-shrink-0">
+                <div class="overflow-hidden min-w-0">
+                  <h4 class="font-bold text-white text-xs truncate">${p.name}</h4>
+                  <p class="text-[11px] text-amber-400 truncate mt-0.5">
+                    <i class="fa-solid fa-location-dot mr-1 text-[9px]"></i>${p.district}
+                  </p>
+                  <span class="inline-block mt-1 px-1.5 py-0.5 rounded text-[9px] font-bold ${ci.chip}">${ci.label}</span>
+                </div>
+              </div>
+              <button onclick="toggleFavorite('${p.id}')" title="Keluarkan"
+                class="flex-shrink-0 w-9 h-9 rounded-2xl bg-rose-500/15 text-rose-400 hover:bg-rose-500/30 flex items-center justify-center transition active:scale-90">
+                <i class="fa-solid fa-trash-can text-xs"></i>
+              </button>
+            </div>`;
+          }).join('')}
+        </div>`;
+
+      hydrateImages();
+    }
+
+    /* ==========================================================
+       ADMIN TABLE
+       ========================================================== */
+    function renderAdminTable(filterQuery = '') {
+      const tbody = document.getElementById('adminTableBody');
+      if (!tbody) return;
+
+      const q = filterQuery.toLowerCase();
+      const list = State.places.filter(p =>
+        !q ? true : (p.name.toLowerCase().includes(q) || p.district.toLowerCase().includes(q) || p.category.toLowerCase().includes(q))
+      );
+
+      tbody.innerHTML = list.map(item => {
+        const ci = catInfo(item.category);
+        return `
+        <tr class="admin-row border-b border-white/5">
+          <td class="py-3 px-3">
+            <div class="flex items-center space-x-3">
+              <img src="${item.image}" alt="${item.name}" onerror="this.src='https://placehold.co/100x100/0b1020/f59e0b?text=Perak'"
+                   class="w-11 h-11 rounded-xl object-cover border border-white/10">
+              <div class="min-w-0">
+                <p class="font-bold text-white truncate max-w-[160px]">${item.name}</p>
+                <p class="text-[10px] text-slate-500">GPS: ${item.lat.toFixed(3)}, ${item.lng.toFixed(3)}</p>
+              </div>
+            </div>
+          </td>
+          <td class="py-3 px-3">
+            <span class="px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wide ${ci.chip}">${ci.label}</span>
+          </td>
+          <td class="py-3 px-3 text-slate-300">${item.district}</td>
+          <td class="py-3 px-3">
+            <span class="text-amber-400 font-bold"><i class="fa-solid fa-star text-[10px]"></i> ${item.rating}</span>
+            <span class="text-slate-500 ml-1.5 text-[10px]">(${item.price})</span>
+          </td>
+          <td class="py-3 px-3 text-right whitespace-nowrap">
+            <button onclick="openEditPlaceModal('${item.id}')" title="Sunting"
+              class="p-2 rounded-xl bg-amber-500/15 text-amber-300 hover:bg-amber-500/30 transition active:scale-90">
+              <i class="fa-solid fa-pen-to-square"></i>
+            </button>
+            <button onclick="promptDeletePlace('${item.id}')" title="Padam"
+              class="p-2 rounded-xl bg-rose-500/15 text-rose-300 hover:bg-rose-500/30 transition active:scale-90 ml-1">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function filterAdminTable(query) { renderAdminTable(query); }
+
+    function animateCount(el, target) {
+      if (!el) return;
+      const start = parseInt(el.textContent, 10) || 0;
+      if (start === target) { el.textContent = target; return; }
+      const dur = 650;
+      const t0 = performance.now();
+      function step(t) {
+        const p = Math.min(1, (t - t0) / dur);
+        const eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.round(start + (target - start) * eased);
+        if (p < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    function updateAdminDashboardStats() {
+      const total = State.places.length;
+      const hotels = State.places.filter(p => p.category === 'hotel').length;
+      const cafes = State.places.filter(p => p.category === 'cafe').length;
+      const bookmarks = State.favorites.size;
+
+      animateCount(document.getElementById('statTotalPlaces'), total);
+      animateCount(document.getElementById('statHotels'), hotels);
+      animateCount(document.getElementById('statCafes'), cafes);
+      animateCount(document.getElementById('statBookmarks'), bookmarks);
+    }
+
+    /* ==========================================================
+       ADMIN FORM
+       ========================================================== */
+    function openAddPlaceModal() {
+      document.getElementById('adminPlaceForm').reset();
+      document.getElementById('editPlaceId').value = '';
+      document.getElementById('adminFormTitle').textContent = 'Tambah Destinasi Baru';
+      document.getElementById('imagePreviewContainer').classList.add('hidden');
+      document.getElementById('adminFormModal').classList.remove('hidden');
+    }
+
+    function openEditPlaceModal(placeId) {
+      const place = State.places.find(p => p.id === placeId);
+      if (!place) return;
+
+      document.getElementById('editPlaceId').value = place.id;
+      document.getElementById('formName').value = place.name;
+      document.getElementById('formCategory').value = place.category;
+      document.getElementById('formDistrict').value = place.district;
+      document.getElementById('formRating').value = place.rating;
+      document.getElementById('formPrice').value = place.price;
+      document.getElementById('formLat').value = place.lat;
+      document.getElementById('formLng').value = place.lng;
+      document.getElementById('formImageUrl').value = place.image;
+      document.getElementById('formDescription').value = place.description;
+
+      const preview = document.getElementById('formImagePreview');
+      preview.src = place.image;
+      document.getElementById('imagePreviewContainer').classList.remove('hidden');
+
+      document.getElementById('adminFormTitle').textContent = 'Sunting Maklumat Destinasi';
+      document.getElementById('adminFormModal').classList.remove('hidden');
+    }
+
+    function closeAdminFormModal() {
+      document.getElementById('adminFormModal').classList.add('hidden');
+    }
+
+    function handleImageBase64(fileInput) {
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const base64Url = e.target.result;
+        document.getElementById('formImageUrl').value = base64Url;
+        const preview = document.getElementById('formImagePreview');
+        preview.src = base64Url;
+        document.getElementById('imagePreviewContainer').classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function handleSavePlace(event) {
+      event.preventDefault();
+
+      const editId = document.getElementById('editPlaceId').value;
+      const name = document.getElementById('formName').value.trim();
+      const category = document.getElementById('formCategory').value;
+      const district = document.getElementById('formDistrict').value;
+      const rating = parseFloat(document.getElementById('formRating').value) || 4.5;
+      const price = document.getElementById('formPrice').value.trim() || 'Percuma';
+      const lat = parseFloat(document.getElementById('formLat').value) || 4.5975;
+      const lng = parseFloat(document.getElementById('formLng').value) || 101.0901;
+      const image = document.getElementById('formImageUrl').value.trim() || 'https://placehold.co/600x400/0b1020/f59e0b?text=Perak';
+      const description = document.getElementById('formDescription').value.trim();
+
+      if (editId) {
+        const index = State.places.findIndex(p => p.id === editId);
+        if (index !== -1) {
+          State.places[index] = { ...State.places[index], name, category, district, rating, price, lat, lng, image, description };
+          showToast('Kandungan destinasi berjaya dikemaskini!', 'success');
+        }
+      } else {
+        State.places.unshift({
+          id: 'pk-' + Date.now().toString().slice(-4),
+          name, category, district, rating, price, lat, lng, image, description,
+          isBest: rating >= 4.8,
+          hours: "09:00 AM - 06:00 PM",
+          facilities: "Parkir, Tandas"
+        });
+        showToast('Destinasi baharu berjaya didaftarkan!', 'success');
+      }
+
+      closeAdminFormModal();
+      renderAdminTable();
+      updateAdminDashboardStats();
+      renderFeaturedReel();
+      renderPlacesGrid();
+      updateMapMarkers();
+    }
+
+    function promptDeletePlace(placeId) {
+      const place = State.places.find(p => p.id === placeId);
+      if (!place) return;
+
+      openConfirmDialog(
+        `Padam "${place.name}"?`,
+        `Adakah anda pasti mahu memadamkan "${place.name}" daripada senarai pelancongan Perak? Tindakan ini tidak boleh diundur.`,
+        () => {
+          State.places = State.places.filter(p => p.id !== placeId);
+          State.favorites.delete(placeId);
+          showToast(`"${place.name}" telah berjaya dipadam.`, 'info');
+          renderAdminTable();
+          updateAdminDashboardStats();
+          renderFeaturedReel();
+          renderPlacesGrid();
+          updateMapMarkers();
+          updateFavoritesUI();
+        }
+      );
+    }
+
+    /* ==========================================================
+       AUTH
+       ========================================================== */
+    let currentAuthTab = 'login';
+
+    function openAuthModal() {
+      closeSidebar();
+      closeFab();
+      switchAuthTab('login');
+      document.getElementById('authErrorMessage').classList.add('hidden');
+      document.getElementById('authModal').classList.remove('hidden');
+    }
+
+    function closeAuthModal() {
+      document.getElementById('authModal').classList.add('hidden');
+    }
+
+    function switchAuthTab(tab) {
+      currentAuthTab = tab;
+      const isLogin = tab === 'login';
+
+      document.getElementById('nameFieldGroup').classList.toggle('hidden', isLogin);
+      document.getElementById('roleSelectGroup').classList.toggle('hidden', isLogin);
+
+      const activeCls = 'flex-1 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-amber-300 to-amber-500 text-slate-950 transition';
+      const idleCls   = 'flex-1 py-2 text-xs font-bold rounded-xl text-slate-400 hover:text-white transition';
+
+      document.getElementById('tabBtnLogin').className = isLogin ? activeCls : idleCls;
+      document.getElementById('tabBtnRegister').className = !isLogin ? activeCls : idleCls;
+
+      document.getElementById('authModalTitle').textContent = isLogin ? 'Log Masuk Pengguna' : 'Pendaftaran Akaun Baharu';
+      document.getElementById('authSubmitBtn').textContent = isLogin ? 'Log Masuk Sekarang' : 'Daftar Akaun Perak';
+      document.getElementById('authErrorMessage').classList.add('hidden');
+    }
+
+    function togglePasswordVisibility() {
+      const input = document.getElementById('authPasswordInput');
+      const icon = document.getElementById('passwordEyeIcon');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'fa-solid fa-eye-slash';
+      } else {
+        input.type = 'password';
+        icon.className = 'fa-solid fa-eye';
+      }
+    }
+
+    function prefillAdminDemo() {
+      document.getElementById('authEmailInput').value = 'admin@perak.my';
+      document.getElementById('authPasswordInput').value = 'admin123';
+      showToast('Kredensial Admin demo telah diisi.', 'info');
+    }
+
+    function handleAuthSubmit(event) {
+      event.preventDefault();
+      const email = document.getElementById('authEmailInput').value.trim();
+      const pass = document.getElementById('authPasswordInput').value.trim();
+      const errorBox = document.getElementById('authErrorMessage');
+
+      if (currentAuthTab === 'login') {
+        const existing = DEMO_ACCOUNTS[email];
+        if (existing && existing.pass === pass) {
+          State.currentUser = { name: existing.name, email, role: existing.role };
+          closeAuthModal();
+          updateAuthUI();
+          showToast(`Selamat kembali, ${existing.name}! [${existing.role.toUpperCase()}]`, 'success');
+          navigateTo(existing.role === 'admin' ? 'admin' : 'home');
+        } else {
+          errorBox.textContent = 'Emel atau kata laluan tidak sah. Cuba admin@perak.my / admin123';
+          errorBox.classList.remove('hidden');
+          errorBox.classList.remove('pop-in');
+          void errorBox.offsetWidth;
+          errorBox.classList.add('pop-in');
+        }
+      } else {
+        const name = document.getElementById('authNameInput').value.trim() || 'Pengguna Perak';
+        const role = document.getElementById('authRoleSelect').value;
+
+        if (DEMO_ACCOUNTS[email]) {
+          errorBox.textContent = 'Emel ini telah berdaftar. Sila gunakan emel lain atau log masuk.';
+          errorBox.classList.remove('hidden');
+          return;
+        }
+
+        DEMO_ACCOUNTS[email] = { name, role, pass };
+        State.currentUser = { name, email, role };
+
+        closeAuthModal();
+        updateAuthUI();
+        showToast(`Akaun berjaya dicipta! Selamat datang ke Perak, ${name}.`, 'success');
+        navigateTo(role === 'admin' ? 'admin' : 'home');
+      }
+    }
+
+    function handleLogout() {
+      openConfirmDialog(
+        'Log Keluar Akaun',
+        'Adakah anda pasti untuk log keluar dari sistem Travel@Perak?',
+        () => {
+          State.currentUser = null;
+          updateAuthUI();
+          showToast('Anda telah log keluar. Beroperasi sebagai Pelawat (Guest).', 'info');
+          navigateTo('home');
+        }
+      );
+    }
+
+    function updateAuthUI() {
+      const headerAuthBtn = document.getElementById('headerAuthBtn');
+      const headerAuthText = document.getElementById('headerAuthText');
+      const roleBadgeContainer = document.getElementById('roleBadgeContainer');
+      const roleBadgeText = document.getElementById('roleBadgeText');
+      const adminShortcutBtn = document.getElementById('adminShortcutBtn');
+      const navBtnAdmin = document.getElementById('nav-btn-admin');
+
+      const profileName = document.getElementById('profileUserName');
+      const profileEmail = document.getElementById('profileUserEmail');
+      const profileRole = document.getElementById('profileRoleBadge');
+      const profileActionBtn = document.getElementById('profileActionBtn');
+      const logoutBtn = document.getElementById('logoutBtn');
+
+      const sbName = document.getElementById('sidebarUserName');
+      const sbRole = document.getElementById('sidebarUserRole');
+      const sbAuthBtn = document.getElementById('sidebarAuthBtn');
+
+      if (State.currentUser) {
+        const isAdm = State.currentUser.role === 'admin';
+
+        headerAuthText.textContent = State.currentUser.name.split(' ')[0];
+        roleBadgeContainer.classList.remove('hidden');
+        roleBadgeText.textContent = isAdm ? 'Admin Perak' : 'Pelanggan';
+
+        if (isAdm) {
+          adminShortcutBtn.classList.remove('hidden');
+          navBtnAdmin.classList.remove('hidden');
+          navBtnAdmin.classList.add('flex');
+        } else {
+          adminShortcutBtn.classList.add('hidden');
+          navBtnAdmin.classList.add('hidden');
+          navBtnAdmin.classList.remove('flex');
+        }
+
+        profileName.textContent = State.currentUser.name;
+        profileEmail.textContent = State.currentUser.email;
+        profileRole.textContent = `Peranan: ${isAdm ? 'Pentadbir (Admin)' : 'Pelanggan (Customer)'}`;
+        profileActionBtn.classList.add('hidden');
+        logoutBtn.classList.remove('hidden');
+
+        if (sbName) sbName.textContent = State.currentUser.name;
+        if (sbRole) sbRole.textContent = isAdm ? 'Pentadbir (Admin)' : 'Pelanggan';
+        if (sbAuthBtn) {
+          sbAuthBtn.onclick = handleLogout;
+          sbAuthBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket mr-1.5 text-rose-400"></i> Log Keluar';
+        }
+      } else {
+        headerAuthText.textContent = 'Masuk';
+        roleBadgeContainer.classList.add('hidden');
+        adminShortcutBtn.classList.add('hidden');
+        navBtnAdmin.classList.add('hidden');
+        navBtnAdmin.classList.remove('flex');
+
+        profileName.textContent = 'Pelawat Umum (Guest)';
+        profileEmail.textContent = 'Sila log masuk untuk menyimpan kegemaran & akses penuh';
+        profileRole.textContent = 'Peranan: Pelawat (Guest)';
+        profileActionBtn.classList.remove('hidden');
+        logoutBtn.classList.add('hidden');
+
+        if (sbName) sbName.textContent = 'Pelawat (Guest)';
+        if (sbRole) sbRole.textContent = 'Belum log masuk';
+        if (sbAuthBtn) {
+          sbAuthBtn.onclick = openAuthModal;
+          sbAuthBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket mr-1.5 text-amber-400"></i> Log Masuk / Daftar';
+        }
+      }
+
+      updateFavoritesUI();
+    }
+
+    /* ==========================================================
+       FILTER / SEARCH
+       ========================================================== */
+    function setCategoryFilter(cat) {
+      State.activeCategory = cat;
+
+      document.querySelectorAll('.cat-pill').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-category') === cat);
+      });
+
+      const titleEl = document.getElementById('gridTitle');
+      if (titleEl) {
+        const barColor = {
+          all: 'from-cyan-300 to-blue-600',
+          best: 'from-rose-300 to-pink-600',
+          hotel: 'from-cyan-300 to-blue-600',
+          cafe: 'from-amber-300 to-orange-600',
+          nature: 'from-emerald-300 to-teal-600',
+          heritage: 'from-violet-300 to-fuchsia-600'
+        }[cat] || 'from-cyan-300 to-blue-600';
+
+        titleEl.innerHTML = `
+          <span class="w-1.5 h-5 rounded-full bg-gradient-to-b ${barColor} mr-2.5"></span>
+          ${formatCategoryHeader(cat)}`;
+      }
+
+      renderPlacesGrid();
+    }
+
+    function handleSearch(val) {
+      State.searchQuery = val.trim();
+      renderPlacesGrid();
+    }
+
+    function clearSearch() {
+      const input = document.getElementById('globalSearchInput');
+      if (input) input.value = '';
+      State.searchQuery = '';
+      renderPlacesGrid();
+    }
+
+    /* ==========================================================
+       HELPERS
+       ========================================================== */
+    function formatCategoryName(cat) {
+      switch (cat) {
+        case 'hotel': return 'Hotel & Resort';
+        case 'cafe': return 'Coffee Shop';
+        case 'nature': return 'Alam Semula';
+        case 'heritage': return 'Warisan Sejarah';
+        case 'best': return 'Best Perak';
+        default: return 'Tarikan';
+      }
+    }
+
+    function formatCategoryHeader(cat) {
+      switch (cat) {
+        case 'best': return 'Pilihan Terbaik (Best in Perak)';
+        case 'hotel': return 'Senarai Hotel & Penginapan Menarik';
+        case 'cafe': return 'Kafe & Warung Kopi Hipster Perak';
+        case 'nature': return 'Keindahan Alam Semulajadi & Rimba';
+        case 'heritage': return 'Warisan Bersejarah & Arkeologi';
+        default: return 'Semua Destinasi & Tarikan Pelancongan';
+      }
+    }
+
+    function getCategoryIcon(cat) {
+      switch (cat) {
+        case 'hotel': return 'fa-solid fa-hotel';
+        case 'cafe': return 'fa-solid fa-mug-hot';
+        case 'nature': return 'fa-solid fa-tree';
+        case 'heritage': return 'fa-solid fa-landmark';
+        default: return 'fa-solid fa-location-dot';
+      }
+    }
+
+    /* ==========================================================
+       CONFIRM DIALOG
+       ========================================================== */
+    function openConfirmDialog(title, message, onProceed) {
+      const dialog = document.getElementById('confirmDialog');
+      document.getElementById('confirmDialogTitle').textContent = title;
+      document.getElementById('confirmDialogMessage').textContent = message;
+
+      const cancelBtn = document.getElementById('confirmCancelBtn');
+      const proceedBtn = document.getElementById('confirmProceedBtn');
+
+      const newCancel = cancelBtn.cloneNode(true);
+      const newProceed = proceedBtn.cloneNode(true);
+      cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+      proceedBtn.parentNode.replaceChild(newProceed, proceedBtn);
+
+      newCancel.addEventListener('click', () => dialog.classList.add('hidden'));
+      newProceed.addEventListener('click', () => {
+        dialog.classList.add('hidden');
+        if (typeof onProceed === 'function') onProceed();
+      });
+
+      dialog.classList.remove('hidden');
+    }
+
+    /* ==========================================================
+       TOAST
+       ========================================================== */
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+
+      const theme = {
+        success: { border: 'border-emerald-500/40', icon: 'fa-circle-check', color: '#34d399' },
+        error:   { border: 'border-rose-500/40',    icon: 'fa-triangle-exclamation', color: '#fb7185' },
+        warning: { border: 'border-amber-400/50',   icon: 'fa-bell', color: '#fbbf24' },
+        info:    { border: 'border-amber-500/40',   icon: 'fa-circle-info', color: '#fbbf24' }
+      }[type] || { border: 'border-amber-500/40', icon: 'fa-circle-info', color: '#fbbf24' };
+
+      const toast = document.createElement('div');
+      toast.className = `toast-in relative overflow-hidden p-3.5 pr-9 rounded-2xl bg-slate-900/95 backdrop-blur-xl border ${theme.border} shadow-2xl flex items-center space-x-3 pointer-events-auto text-xs`;
+      toast.style.boxShadow = `0 18px 40px -16px rgba(0,0,0,.95), 0 0 0 1px rgba(255,255,255,.03) inset`;
+
+      toast.innerHTML = `
+        <i class="fa-solid ${theme.icon} text-sm flex-shrink-0" style="color:${theme.color}"></i>
+        <span class="flex-1 font-medium text-slate-100 leading-snug">${message}</span>
+        <button onclick="this.parentElement.remove()" class="absolute top-2.5 right-2.5 text-slate-500 hover:text-white transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+        <div class="toast-bar absolute bottom-0 left-0 right-0 h-[2px]" style="background:${theme.color};opacity:.7"></div>
+      `;
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.transition = 'opacity .35s ease, transform .35s ease';
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(24px) scale(.95)';
+        setTimeout(() => toast.remove(), 360);
+      }, 4000);
+    }
+
+    /* ==========================================================
+       PWA SERVICE WORKER
+       ========================================================== */
+    function setupPWAOfflineWorker() {
+      if ('serviceWorker' in navigator) {
+        const swScript = `
+          const CACHE_NAME = 'travel-perak-v3';
+          self.addEventListener('install', () => self.skipWaiting());
+          self.addEventListener('activate', e => e.waitUntil(clients.claim()));
+          self.addEventListener('fetch', e => {
+            e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+          });
+        `;
+        const blob = new Blob([swScript], { type: 'application/javascript' });
+        const swUrl = URL.createObjectURL(blob);
+        navigator.serviceWorker.register(swUrl).catch(err => console.log('SW note:', err));
+      }
+    }
+  </script>
+</body>
+</html>
